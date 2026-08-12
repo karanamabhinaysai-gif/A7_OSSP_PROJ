@@ -1,0 +1,6 @@
+[Wed Aug 12 06:15:18 2026] Command: "admin" - LOGIN FAILED
+[Wed Aug 12 06:15:29 2026] Command: "admin" - LOGIN SUCCESS
+[Wed Aug 12 06:15:36 2026] Command: "pws" - BLOCKED - NOT WHITELISTED
+[Wed Aug 12 06:15:39 2026] Command: "pwd" - EXECUTED
+[Wed Aug 12 06:15:47 2026] Command: "whoami" - EXECUTED
+[Wed Aug 12 06:16:08 2026] Command: "exit" - SESSION ENDED
