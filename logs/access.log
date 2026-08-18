@@ -4,3 +4,8 @@
 [Wed Aug 12 06:15:39 2026] Command: "pwd" - EXECUTED
 [Wed Aug 12 06:15:47 2026] Command: "whoami" - EXECUTED
 [Wed Aug 12 06:16:08 2026] Command: "exit" - SESSION ENDED
+[Tue Aug 18 13:22:05 2026] Command: "ls" - EXECUTED
+[Tue Aug 18 13:22:13 2026] Command: "pwd" - EXECUTED
+[Tue Aug 18 13:22:22 2026] Command: "rm -rf / —" - BLOCKED - NOT WHITELISTED
+[Tue Aug 18 13:22:31 2026] Command: "whoami" - EXECUTED
+[Tue Aug 18 13:23:49 2026] Command: "cd Re	" - BLOCKED - NOT WHITELISTED

@@ -1,8 +1,19 @@
-all:
-	gcc src/restricted_shell.c -o bin/restricted_shell
+CC = gcc
+CFLAGS = -Wall -Wextra -g -Iinclude
+SRC = src/main.c \
+      src/auth.c \
+      src/executor.c
+TARGET = bin/shellforge
+ 
+all: $(TARGET)
+ 
+$(TARGET):
+	mkdir -p bin
+	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
+ 
 run:
-	./bin/restricted_shell
+	./$(TARGET)
+ 
 clean:
-	rm -f bin/restricted_shell
-	rm -f logs/access.log
+	rm -rf bin/*
 
