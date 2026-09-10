@@ -9,3 +9,6 @@
 [Tue Aug 18 13:22:22 2026] Command: "rm -rf / —" - BLOCKED - NOT WHITELISTED
 [Tue Aug 18 13:22:31 2026] Command: "whoami" - EXECUTED
 [Tue Aug 18 13:23:49 2026] Command: "cd Re	" - BLOCKED - NOT WHITELISTED
+[Thu Sep 10 08:17:50 2026] Command: "pwd" - EXECUTED
+[Thu Sep 10 08:18:06 2026] Command: "cat logs/access.log" - EXECUTED
+[Thu Sep 10 08:18:24 2026] Command: "clear" - EXECUTED
