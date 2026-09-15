@@ -1,40 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/shell.h"
-#include "../include/auth.h"
-#include "../include/executor.h"
- 
-#define MAX_INPUT 1024
- 
+#include "shell.h"
+#include "auth.h"
+#include "executor.h"
+#include "builtin.h"
+#include "signals.h"
+
 int main()
 {
     char input[MAX_INPUT];
- 
-    printf("=================================\n");
-    printf("%s Version %s\n", SHELL_NAME, VERSION);
-    printf("=================================\n");
- 
+
+    // Initialize signal handlers for SIGINT, SIGTSTP, SIGCHLD
+    initialize_signals();
+
+    printf("=======================================================\n");
+    printf("     %s Framework — Version %s\n", SHELL_NAME, VERSION);
+    printf("     Advanced Process Management & Security Control    \n");
+    printf("=======================================================\n\n");
+
+    // Authenticate user before shell access is granted
     if(!authenticate())
     {
         return EXIT_FAILURE;
     }
- 
+
+    printf("[+] Welcome, %s! Type 'help' for commands, 'exit' to quit.\n\n", get_current_user());
+
     while(1)
     {
         printf("myshell> ");
-        if(fgets(input, MAX_INPUT, stdin) == NULL)
-            break;
-        input[strcspn(input, "\n")] = '\0';
- 
-        if(strcmp(input, "exit") == 0)
+        fflush(stdout);
+
+        if(fgets(input, sizeof(input), stdin) == NULL)
         {
+            // EOF (Ctrl+D) reached
+            printf("\n");
             break;
         }
- 
-        if(strlen(input) != 0)
-            execute_command(input);
+
+        // Strip newline
+        input[strcspn(input, "\r\n")] = '\0';
+
+        if(strlen(input) == 0)
+            continue;
+
+        execute_command(input);
     }
-    printf("Goodbye!\n");
-    return 0;
+
+    printf("\nGoodbye!\n");
+    log_attempt("session", "SESSION CLOSED NORMALLY");
+    return EXIT_SUCCESS;
 }

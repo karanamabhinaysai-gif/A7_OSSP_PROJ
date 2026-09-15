@@ -2,6 +2,8 @@
 #define SHELL_H
 
 #define SHELL_NAME "RestrictedShell"
-#define VERSION "1.0"
+#define VERSION "6.0"
+#define MAX_INPUT 1024
+#define MAX_ARGS 64
 
 #endif
