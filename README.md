@@ -225,6 +225,17 @@ Terminating RestrictedShell session.
 | **Week 4** | Process Control & Diagnostics | Completed | `fork()`, `execvp()`, `waitpid()` loop with `WIFEXITED`/`WIFSIGNALED`, `perror()` |
 | **Week 5** | Built-in Commands & Environment | Completed | `cd`, `pwd`, `help`, `clear`, `env`, `history`, `chdir()`, `getcwd()`, `getenv()` |
 | **Week 6** | Signals & Process Management | Completed | POSIX `sigaction()` handlers for `SIGINT` (Ctrl+C survival) and `SIGCHLD` (async zombie cleanup) |
+| **Week 7** | Pipes & Inter-Process Communication | Completed | `pipe()`, `dup2()`, two-stage pipeline execution, IPC using file descriptors |
+
+---
+
+## Week 7 Features
+- Anonymous pipes
+- `pipe()`
+- `dup2()`
+- Two-command pipelines (`cmd1 | cmd2`)
+- IPC using file descriptors
+- Pipelined command whitelisting and security verification
 
 ---
 

@@ -8,10 +8,12 @@
 #include "executor.h"
 #include "builtin.h"
 #include "shell.h"
+#include "pipes.h"
 
 static const char *ALLOWED_COMMANDS[] =
 {
-    "ls", "pwd", "date", "whoami", "echo", "cat", "clear", "uname", "df", NULL
+    "ls", "pwd", "date", "whoami", "echo", "cat", "clear", "uname", "df",
+    "wc", "grep", "ps", "sort", "head", "tail", NULL
 };
 
 int is_allowed(const char *cmd)
@@ -28,7 +30,7 @@ int is_allowed(const char *cmd)
 
 int has_dangerous_chars(const char *input)
 {
-    const char *blocked = ";|&><`$\\";
+    const char *blocked = ";&><`$\\";
     for(int i = 0; input[i] != '\0'; i++)
     {
         if(strchr(blocked, input[i]) != NULL)
@@ -66,12 +68,69 @@ void execute_command(char *line)
     // 1. Security Check: Dangerous metacharacters
     if(has_dangerous_chars(line))
     {
-        printf("[-] Blocked: unsafe metacharacters detected (; | & > < ` $ \\)\n");
+        printf("[-] Blocked: unsafe metacharacters detected (; & > < ` $ \\)\n");
         log_attempt(line, "BLOCKED - UNSAFE INPUT");
         return;
     }
 
-    // 2. Tokenize command into argument array
+    // 2. Pipeline Execution: Check for Pipe (|)
+    if(strchr(line, '|') != NULL)
+    {
+        char pipe_copy[MAX_INPUT];
+        strncpy(pipe_copy, line, sizeof(pipe_copy) - 1);
+        pipe_copy[sizeof(pipe_copy) - 1] = '\0';
+
+        char *left = strtok(pipe_copy, "|");
+        char *right = strtok(NULL, "|");
+
+        if(left == NULL || right == NULL)
+        {
+            printf("[-] Invalid pipe command syntax\n");
+            log_attempt(line, "BLOCKED - INVALID PIPE SYNTAX");
+            return;
+        }
+
+        char *cmd1_args[MAX_ARGS];
+        char *cmd2_args[MAX_ARGS];
+        int c1 = 0, c2 = 0;
+
+        char *tok = strtok(left, " \t");
+        while(tok != NULL && c1 < MAX_ARGS - 1)
+        {
+            cmd1_args[c1++] = tok;
+            tok = strtok(NULL, " \t");
+        }
+        cmd1_args[c1] = NULL;
+
+        tok = strtok(right, " \t");
+        while(tok != NULL && c2 < MAX_ARGS - 1)
+        {
+            cmd2_args[c2++] = tok;
+            tok = strtok(NULL, " \t");
+        }
+        cmd2_args[c2] = NULL;
+
+        if(c1 == 0 || c2 == 0)
+        {
+            printf("[-] Missing command in pipeline\n");
+            log_attempt(line, "BLOCKED - INCOMPLETE PIPE");
+            return;
+        }
+
+        if(!is_allowed(cmd1_args[0]) || !is_allowed(cmd2_args[0]))
+        {
+            printf("[-] Pipeline command not permitted (Type 'help' for allowed commands)\n");
+            log_attempt(line, "BLOCKED - PIPE COMMAND NOT WHITELISTED");
+            return;
+        }
+
+        add_history(line);
+        execute_pipe(cmd1_args, cmd2_args);
+        log_attempt(line, "EXECUTED PIPELINE");
+        return;
+    }
+
+    // 3. Tokenize standard command into argument array
     strncpy(copy, line, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
@@ -89,14 +148,14 @@ void execute_command(char *line)
     // Record in history
     add_history(line);
 
-    // 3. Check and execute built-in commands in parent process
+    // 4. Check and execute built-in commands in parent process
     if(is_builtin(args[0]))
     {
         execute_builtin(args);
         return;
     }
 
-    // 4. Whitelist check for external commands
+    // 5. Whitelist check for external commands
     if(!is_allowed(args[0]))
     {
         printf("[-] Command not permitted: %s (Type 'help' for allowed commands)\n", args[0]);
@@ -104,7 +163,7 @@ void execute_command(char *line)
         return;
     }
 
-    // 5. Fork and Execute external process
+    // 6. Fork and Execute external process
     pid = fork();
 
     if(pid < 0)
