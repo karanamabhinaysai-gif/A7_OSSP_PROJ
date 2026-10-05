@@ -226,6 +226,7 @@ Terminating RestrictedShell session.
 | **Week 5** | Built-in Commands & Environment | Completed | `cd`, `pwd`, `help`, `clear`, `env`, `history`, `chdir()`, `getcwd()`, `getenv()` |
 | **Week 6** | Signals & Process Management | Completed | POSIX `sigaction()` handlers for `SIGINT` (Ctrl+C survival) and `SIGCHLD` (async zombie cleanup) |
 | **Week 7** | Pipes & Inter-Process Communication | Completed | `pipe()`, `dup2()`, two-stage pipeline execution, IPC using file descriptors |
+| **Week 9** | File Descriptors & I/O Redirection | Completed | Output (`>`), Append (`>>`), Input (`<`), and Error (`2>`) redirection using `open()`, `close()`, and `dup2()` |
 
 ---
 
@@ -236,6 +237,17 @@ Terminating RestrictedShell session.
 - Two-command pipelines (`cmd1 | cmd2`)
 - IPC using file descriptors
 - Pipelined command whitelisting and security verification
+
+---
+
+## Week 9 Features
+- File descriptor management
+- Output redirection (`>`) with `O_WRONLY | O_CREAT | O_TRUNC`
+- Append redirection (`>>`) with `O_WRONLY | O_CREAT | O_APPEND`
+- Input redirection (`<`) with `O_RDONLY` and `STDIN_FILENO`
+- Error redirection (`2>`) with `O_WRONLY | O_CREAT | O_TRUNC` and `STDERR_FILENO`
+- File handling using `open()`, `close()`, and `dup2()`
+- Integrated security audit logging for all redirected streams in `logs/access.log`
 
 ---
 

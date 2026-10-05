@@ -5,7 +5,8 @@ SRC = src/main.c \
       src/executor.c \
       src/builtin.c \
       src/signals.c \
-      src/pipes.c
+      src/pipes.c \
+      src/redirect.c
 TARGET = bin/shellforge
 
 all: $(TARGET)

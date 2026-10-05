@@ -9,6 +9,7 @@
 #include "builtin.h"
 #include "shell.h"
 #include "pipes.h"
+#include "redirect.h"
 
 static const char *ALLOWED_COMMANDS[] =
 {
@@ -30,7 +31,7 @@ int is_allowed(const char *cmd)
 
 int has_dangerous_chars(const char *input)
 {
-    const char *blocked = ";&><`$\\";
+    const char *blocked = ";&`$\\";
     for(int i = 0; input[i] != '\0'; i++)
     {
         if(strchr(blocked, input[i]) != NULL)
@@ -68,7 +69,7 @@ void execute_command(char *line)
     // 1. Security Check: Dangerous metacharacters
     if(has_dangerous_chars(line))
     {
-        printf("[-] Blocked: unsafe metacharacters detected (; & > < ` $ \\)\n");
+        printf("[-] Blocked: unsafe metacharacters detected (; & ` $ \\)\n");
         log_attempt(line, "BLOCKED - UNSAFE INPUT");
         return;
     }
@@ -155,7 +156,13 @@ void execute_command(char *line)
         return;
     }
 
-    // 5. Whitelist check for external commands
+    // 5. I/O Redirection Execution: Check for >, >>, <, 2>
+    if(execute_redirection(args))
+    {
+        return;
+    }
+
+    // 6. Whitelist check for external commands
     if(!is_allowed(args[0]))
     {
         printf("[-] Command not permitted: %s (Type 'help' for allowed commands)\n", args[0]);
@@ -163,7 +170,7 @@ void execute_command(char *line)
         return;
     }
 
-    // 6. Fork and Execute external process
+    // 7. Fork and Execute external process
     pid = fork();
 
     if(pid < 0)
