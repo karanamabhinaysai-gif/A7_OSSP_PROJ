@@ -6,6 +6,7 @@
 #include "executor.h"
 #include "builtin.h"
 #include "signals.h"
+#include "thread.h"
 
 int main()
 {
@@ -13,6 +14,9 @@ int main()
 
     // Initialize signal handlers for SIGINT, SIGTSTP, SIGCHLD
     initialize_signals();
+
+    // Initialize background monitoring thread (POSIX Threads)
+    start_monitor_thread();
 
     printf("=======================================================\n");
     printf("     %s Framework — Version %s\n", SHELL_NAME, VERSION);
