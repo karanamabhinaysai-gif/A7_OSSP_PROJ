@@ -1,6 +1,34 @@
 # RestrictedShell — Secure Command Execution Framework
 
-A secure, modular, and resilient Linux shell (`rshell`) developed in C for the **Operating Systems and Systems Programming (OSSP)** course. The framework provides user authentication, strict command whitelisting, dangerous character sanitization, built-in commands execution in the parent process, robust process lifecycle synchronization via `waitpid()`, asynchronous signal management (`SIGINT`, `SIGTSTP`, `SIGCHLD`), and tamper-evident audit logging.
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/karanamabhinaysai-gif/A7_OSSP_PROJ)
+[![Build & Test](https://img.shields.io/badge/GCC-15.2.0-blue.svg)](https://gcc.gnu.org/)
+[![Terminal Studio](https://img.shields.io/badge/Web_Terminal-Active-emerald.svg)](terminal_app/index.html)
+[![Valgrind](https://img.shields.io/badge/Valgrind-3.26-green.svg)](https://valgrind.org/)
+
+A secure, modular, and resilient Linux shell (`rshell`) developed in C for the **Operating Systems and Systems Programming (OSSP)** course. The framework provides user authentication, strict command whitelisting, dangerous character sanitization, built-in commands execution in the parent process, robust process lifecycle synchronization via `waitpid()`, asynchronous signal management (`SIGINT`, `SIGTSTP`, `SIGCHLD`), POSIX multithreading with background telemetry monitors, and tamper-evident audit logging.
+
+---
+
+## 🚀 Run Live Inside GitHub (Interactive Cloud Terminal)
+
+You can run the entire project in an interactive Linux terminal **directly inside GitHub** in your browser without installing anything locally:
+
+### Option 1: 1-Click GitHub Codespaces (Full Linux VM in GitHub)
+Click the badge above or navigate to:
+👉 **[Open in GitHub Codespaces](https://codespaces.new/karanamabhinaysai-gif/A7_OSSP_PROJ)**
+
+1. GitHub will immediately boot a full Ubuntu 24.04 Linux container.
+2. The terminal is automatically ready at the bottom of the screen with GCC, Make, Valgrind, and GDB.
+3. Run the project directly:
+   ```bash
+   make
+   ./bin/shellforge
+   ```
+4. Run the Web Terminal Studio:
+   ```bash
+   python3 terminal_app/server.py
+   ```
+   Codespaces will pop up a notification with **"Open in Browser"** on forwarded port `5050`!
 
 ---
 

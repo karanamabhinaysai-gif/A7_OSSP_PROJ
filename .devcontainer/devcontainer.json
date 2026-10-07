@@ -1,0 +1,28 @@
+{
+  "name": "ShellForge Cloud Terminal (Ubuntu 24.04)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": "false",
+      "username": "vscode"
+    }
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y build-essential gcc make valgrind gdb python3 && make",
+  "forwardPorts": [5050],
+  "portsAttributes": {
+    "5050": {
+      "label": "OSSP Web Terminal Studio",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-vscode.cpptools"
+      ]
+    }
+  }
+}

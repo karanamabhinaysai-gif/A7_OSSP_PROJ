@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSSP Cloud Terminal — GitHub Code Execution Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'Fira Code', monospace; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .cursor-blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .crt::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      z-index: 20;
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-black">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 px-2 py-1 bg-emerald-950/60 border border-emerald-500/30 rounded-lg">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Cloud Engine Active</span>
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-white flex items-center gap-2">
+          <span>OSSP Interactive Terminal Studio</span>
+          <span class="text-xs font-normal text-slate-400 border-l border-slate-700 pl-2">25CS2104E Coursework</span>
+        </h1>
+        <p class="text-xs text-slate-400">Direct execution engine for ShellForge (Weeks 1-10) & OS Practicals (1-9)</p>
+      </div>
+    </div>
+
+    <!-- Active GitHub Repositories Badges -->
+    <div class="hidden md:flex items-center gap-2">
+      <a href="https://codespaces.new/karanamabhinaysai-gif/A7_OSSP_PROJ" target="_blank" class="px-2.5 py-1 text-xs bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 rounded-md text-emerald-300 flex items-center gap-1.5 transition">
+        <span>🚀 Open in Codespaces</span>
+      </a>
+      <a href="https://github.com/karanamabhinaysai-gif/A7_OSSP_PROJ" target="_blank" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-300 flex items-center gap-1.5 transition">
+        <span>A7_OSSP_PROJ</span>
+      </a>
+      <a href="https://github.com/Srinath64312/os-practicals-and-simulations" target="_blank" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-300 flex items-center gap-1.5 transition">
+        <span>OS_Pratical</span>
+      </a>
+      <button id="toggleCrt" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 transition" title="Toggle CRT scanline effect">
+        CRT: <span id="crtStatus" class="text-amber-400 font-bold">OFF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+    
+    <!-- Left Sidebar: Categories & Presets -->
+    <aside class="lg:col-span-4 xl:col-span-3 border-r border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar h-auto lg:h-[calc(100vh-61px)]">
+      
+      <!-- Target Workspace Selector -->
+      <div>
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Active Workspace Target</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnRepoShellForge" onclick="switchRepo('shellforge')" class="px-3 py-2 text-xs font-semibold rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 flex flex-col items-start gap-1 transition shadow-sm">
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> ShellForge</span>
+            <span class="text-[10px] text-slate-400 font-normal">Restricted Shell Week 1-10</span>
+          </button>
+          <button id="btnRepoOSPratical" onclick="switchRepo('os_pratical')" class="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-slate-200 flex flex-col items-start gap-1 transition">
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> OS Practicals</span>
+            <span class="text-[10px] text-slate-400 font-normal">Labs 1-9 & Skilling 8, 10</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Action Presets -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quick Execute Presets</label>
+          <span class="text-[10px] text-slate-500">1-Click Run</span>
+        </div>
+
+        <div id="presetsContainer" class="flex flex-col gap-1.5">
+          <!-- ShellForge Presets (Default) -->
+          <div id="shellforgePresets" class="flex flex-col gap-1.5">
+            <button onclick="runShellForgeDemo('auth_pipeline')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>⚡ Login & Execute Pipeline</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Week 7</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">admin / admin123 ➔ ls | wc</div>
+            </button>
+
+            <button onclick="runShellForgeDemo('redirection_append')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>🔄 Redirection (>, >>, <)</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">Week 9</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">echo ... >> log ➔ cat < log</div>
+            </button>
+
+            <button onclick="runShellForgeDemo('builtins_env')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>🛠️ Built-ins & Environment</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-800">Week 5</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">pwd, env, history, help</div>
+            </button>
+
+            <button onclick="runShellForgeDemo('security_gate')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>🛡️ Security Metacharacter Block</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800">Security</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">ls; rm -rf / ➔ BLOCKED</div>
+            </button>
+
+            <button onclick="fetchAuditLogs()" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>📋 View Live Audit Logs</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">access.log</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">cat logs/access.log</div>
+            </button>
+          </div>
+
+          <!-- OS Practicals Presets (Initially Hidden) -->
+          <div id="osPraticalPresets" class="hidden flex flex-col gap-1.5">
+            <button onclick="runProgram('page_replacement', '2\n')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>📊 Page Replacement Simulator</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-teal-950 text-teal-400 border border-teal-800">CO4 Demo</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">FIFO, Optimal, LRU, MRU</div>
+            </button>
+
+            <button onclick="runProgram('prog7_linuxaddr', '\n')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>📍 Practical 7: Process Address Space</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800">Lab 7</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">Text, Data, BSS, Heap, Stack</div>
+            </button>
+
+            <button onclick="runProgram('dynamic_memory', '')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>🧠 Practical 8: Dynamic Memory Allocation</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800">Lab 8</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">malloc, calloc, realloc, free</div>
+            </button>
+
+            <button onclick="runValgrind()" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>🔍 Valgrind 3.26 Leak Detection</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">0 Leaks</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">valgrind --leak-check=full</div>
+            </button>
+
+            <button onclick="runPractical9Copy()" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>📁 Practical 9: Low-Level vs Stdio Copy</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Lab 9</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">copy_lowlevel vs copy_stdio</div>
+            </button>
+
+            <button onclick="runProgram('skilling10', '')" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
+              <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                <span>🧵 Skilling 10: POSIX Threads & Mutex</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">Week 10</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">pthread_create & mutex sync</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Browser / Source Code Preview Button -->
+      <div>
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Source Code Inspector</label>
+        <div id="fileList" class="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar text-xs">
+          <div class="text-slate-500 italic p-1">Loading repository files...</div>
+        </div>
+      </div>
+
+      <!-- Build & Recompile Controller -->
+      <div class="mt-auto pt-2 border-t border-slate-800 flex gap-2">
+        <button onclick="triggerMake('make')" class="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-semibold text-xs rounded-md shadow transition flex items-center justify-center gap-1.5">
+          <span>🔨 Recompile (make)</span>
+        </button>
+        <button onclick="triggerMake('make clean')" class="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-md border border-slate-700 transition">
+          🧹 Clean
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- Center/Right: Terminal Area & Code Viewer -->
+    <main class="lg:col-span-8 xl:col-span-9 flex flex-col h-[calc(100vh-61px)] bg-black overflow-hidden relative" id="terminalContainer">
+      
+      <!-- Terminal Tab Bar -->
+      <div class="bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between select-none">
+        <div class="flex items-center gap-2">
+          <!-- macOS Traffic Lights -->
+          <div class="flex items-center gap-1.5 mr-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block cursor-pointer hover:opacity-80" onclick="clearTerminal()"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block cursor-pointer hover:opacity-80"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block cursor-pointer hover:opacity-80"></span>
+          </div>
+
+          <!-- Active Tab Switches -->
+          <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button id="tabTerminal" onclick="switchView('terminal')" class="px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5">
+              <span>🖥️ Bash Terminal</span>
+            </button>
+            <button id="tabSource" onclick="switchView('source')" class="px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
+              <span>📄 C Source Inspector</span>
+            </button>
+            <button id="tabLogs" onclick="switchView('logs')" class="px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
+              <span>📋 Access Audit Trail</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 text-xs text-slate-400 font-mono">
+          <span id="execTimer" class="text-slate-500">Idle (0.00s)</span>
+          <button onclick="clearTerminal()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[11px] transition">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: TERMINAL OUTPUT WINDOW -->
+      <div id="viewTerminal" class="flex-1 flex flex-col overflow-hidden p-4 font-mono text-xs sm:text-sm">
+        
+        <!-- Output Scroll Container -->
+        <div id="terminalOutput" class="flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-2">
+          <div class="text-emerald-400 font-bold mb-2">
+================================================================================<br>
+  ⚡ WELCOME TO OSSP CLOUD TERMINAL ENGINE — 25CS2104E<br>
+  Running inside GitHub / Linux GCC Environment<br>
+================================================================================
+          </div>
+          <div class="text-slate-400 mb-3">
+Available Repositories:<br>
+  [1] <span class="text-emerald-300 font-semibold">ShellForge (A7_OSSP_PROJ)</span> — Weeks 1-10: Restricted Shell with Login, Whitelist, Pipes (|), Redirection (>, >>, <), ASan, and POSIX Monitor Thread<br>
+  [2] <span class="text-sky-300 font-semibold">OS_Pratical</span> — Practicals 1-9 & Skilling 8, 10 (Process lifecycle, FIFOs, Signals, COW 100MB, Dynamic Memory, Page Replacement, File I/O, POSIX Threads)<br>
+<br>
+Type commands below (e.g., <span class="text-yellow-400">cd src</span>, <span class="text-yellow-400">ls -la</span>, <span class="text-yellow-400">pwd</span>, <span class="text-yellow-400">make</span>, or select a preset on the left).
+          </div>
+        </div>
+
+        <!-- Terminal Input Prompt -->
+        <form id="terminalForm" onsubmit="handleCommandSubmit(event)" class="mt-2 pt-2 border-t border-slate-800 flex items-center gap-2">
+          <span id="promptLabel" class="text-emerald-400 font-bold select-none whitespace-nowrap">srinath@shellforge:~$</span>
+          <input 
+            type="text" 
+            id="cmdInput" 
+            autocomplete="off" 
+            autofocus 
+            placeholder="Type bash command or select preset..." 
+            class="flex-1 bg-transparent text-slate-100 outline-none border-none font-mono text-xs sm:text-sm placeholder:text-slate-600"
+          >
+          <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded transition flex items-center gap-1">
+            <span>Run</span> ↵
+          </button>
+        </form>
+      </div>
+
+      <!-- VIEW 2: C SOURCE CODE INSPECTOR -->
+      <div id="viewSource" class="hidden flex-1 flex flex-col overflow-hidden p-4 font-mono text-xs">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Viewing File:</span>
+            <span id="currentSourcePath" class="text-emerald-400 font-bold">src/pipes.c</span>
+          </div>
+          <span class="text-[11px] text-slate-500">Syntax Highlighted (C)</span>
+        </div>
+        <pre id="sourceCodeContent" class="flex-1 overflow-auto custom-scrollbar p-3 bg-slate-950/80 border border-slate-800 rounded-lg text-slate-300 leading-relaxed">
+// Click any file on the left sidebar to inspect its source code...
+        </pre>
+      </div>
+
+      <!-- VIEW 3: LIVE AUDIT LOG VIEWER -->
+      <div id="viewLogs" class="hidden flex-1 flex flex-col overflow-hidden p-4 font-mono text-xs">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400 font-bold">Audit Trail:</span>
+            <span class="text-slate-400 font-mono">A7_OSSP_PROJ/logs/access.log</span>
+          </div>
+          <button onclick="fetchAuditLogs()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs transition">
+            🔄 Refresh
+          </button>
+        </div>
+        <pre id="auditLogContent" class="flex-1 overflow-auto custom-scrollbar p-3 bg-slate-950/80 border border-slate-800 rounded-lg text-emerald-300 leading-relaxed whitespace-pre-wrap">
+Loading access logs...
+        </pre>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // State
+    let currentRepo = 'shellforge';
+    let repoCwd = {
+      shellforge: '',
+      os_pratical: ''
+    };
+    let repoDisplay = {
+      shellforge: '~',
+      os_pratical: '~'
+    };
+    let commandHistory = [];
+    let historyIndex = -1;
+    let isCrtEnabled = false;
+
+    // Repo switching
+    function switchRepo(repo) {
+      currentRepo = repo;
+      const btnShell = document.getElementById('btnRepoShellForge');
+      const btnOS = document.getElementById('btnRepoOSPratical');
+      const sfPresets = document.getElementById('shellforgePresets');
+      const osPresets = document.getElementById('osPraticalPresets');
+      const promptLabel = document.getElementById('promptLabel');
+
+      const disp = repoDisplay[repo] || '~';
+      if (repo === 'shellforge') {
+        btnShell.className = "px-3 py-2 text-xs font-semibold rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 flex flex-col items-start gap-1 transition shadow-sm";
+        btnOS.className = "px-3 py-2 text-xs font-semibold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-slate-200 flex flex-col items-start gap-1 transition";
+        sfPresets.classList.remove('hidden');
+        osPresets.classList.add('hidden');
+        promptLabel.textContent = `srinath@shellforge:${disp}$`;
+        promptLabel.className = "text-emerald-400 font-bold select-none whitespace-nowrap";
+      } else {
+        btnOS.className = "px-3 py-2 text-xs font-semibold rounded-lg border border-sky-500/40 bg-sky-500/10 text-sky-300 flex flex-col items-start gap-1 transition shadow-sm";
+        btnShell.className = "px-3 py-2 text-xs font-semibold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-slate-200 flex flex-col items-start gap-1 transition";
+        osPresets.classList.remove('hidden');
+        sfPresets.classList.add('hidden');
+        promptLabel.textContent = `srinath@os_pratical:${disp}$`;
+        promptLabel.className = "text-sky-400 font-bold select-none whitespace-nowrap";
+      }
+      loadFilesList();
+    }
+
+    // View Switching
+    function switchView(view) {
+      document.getElementById('viewTerminal').classList.add('hidden');
+      document.getElementById('viewSource').classList.add('hidden');
+      document.getElementById('viewLogs').classList.add('hidden');
+
+      document.getElementById('tabTerminal').className = "px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5";
+      document.getElementById('tabSource').className = "px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5";
+      document.getElementById('tabLogs').className = "px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5";
+
+      if (view === 'terminal') {
+        document.getElementById('viewTerminal').classList.remove('hidden');
+        document.getElementById('tabTerminal').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
+        document.getElementById('cmdInput').focus();
+      } else if (view === 'source') {
+        document.getElementById('viewSource').classList.remove('hidden');
+        document.getElementById('tabSource').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
+      } else if (view === 'logs') {
+        document.getElementById('viewLogs').classList.remove('hidden');
+        document.getElementById('tabLogs').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
+        fetchAuditLogs();
+      }
+    }
+
+    // Append to Terminal Output
+    function appendTerminal(htmlContent) {
+      const output = document.getElementById('terminalOutput');
+      const div = document.createElement('div');
+      div.innerHTML = htmlContent;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminalOutput').innerHTML = '';
+    }
+
+    // API Execution
+    async function executeCommand(cmd, input = '') {
+      const activeDisplay = repoDisplay[currentRepo] || '~';
+      appendTerminal(`<div class="text-slate-400 flex items-center gap-2 mt-2"><span class="${currentRepo === 'shellforge' ? 'text-emerald-400' : 'text-sky-400'} font-bold">srinath@${currentRepo}:${activeDisplay}$</span> <span class="text-white font-semibold">${escapeHtml(cmd)}</span></div>`);
+      
+      const timerLabel = document.getElementById('execTimer');
+      timerLabel.textContent = "Executing...";
+
+      try {
+        const response = await fetch('/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            repo: currentRepo,
+            command: cmd,
+            input: input,
+            cwd: repoCwd[currentRepo] || '',
+            timeout: 20
+          })
+        });
+
+        const res = await response.json();
+        timerLabel.textContent = `Completed (${res.elapsed || 0}s)`;
+
+        // Update working directory and prompt label
+        if (res.cwd && res.display_dir) {
+          repoCwd[currentRepo] = res.cwd;
+          repoDisplay[currentRepo] = res.display_dir;
+          const promptLabel = document.getElementById('promptLabel');
+          promptLabel.textContent = `srinath@${currentRepo}:${res.display_dir}$`;
+        }
+
+        if (res.stdout) {
+          appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2.5 rounded border border-slate-800/80 whitespace-pre-wrap font-mono my-1 leading-relaxed">${escapeHtml(res.stdout)}</pre>`);
+        }
+        if (res.stderr) {
+          appendTerminal(`<pre class="text-rose-400 bg-rose-950/20 p-2 rounded border border-rose-900/40 whitespace-pre-wrap font-mono my-1">${escapeHtml(res.stderr)}</pre>`);
+        }
+        if (!res.stdout && !res.stderr) {
+          appendTerminal(`<div class="text-slate-500 italic">[Process exited with code ${res.exit_code}]</div>`);
+        }
+      } catch (err) {
+        timerLabel.textContent = "Sandbox Mode";
+        handleOfflineSimulation(cmd, input);
+      }
+    }
+
+    function handleOfflineSimulation(cmd, input) {
+      appendTerminal(`<div class="text-amber-400 text-xs italic my-1">⚡ Running in Client Sandbox Mode. Launch backend server.py or open in GitHub Codespaces for live Linux kernel execution.</div>`);
+      const trimmed = cmd.trim();
+      if (trimmed === 'ls' || trimmed === 'ls -la') {
+        if (repoDisplay[currentRepo] === '~/src') {
+          appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono my-1">auth.c  builtin.c  executor.c  main.c  pipes.c  redirect.c  signals.c  thread.c</pre>`);
+        } else {
+          appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono my-1">Makefile  README.md  bin/  include/  logs/  practicals_and_skilling/  src/  terminal_app/</pre>`);
+        }
+      } else if (trimmed === 'pwd') {
+        appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono my-1">/workspaces/A7_OSSP_PROJ${repoDisplay[currentRepo] === '~/src' ? '/src' : ''}</pre>`);
+      } else if (trimmed === 'cd src') {
+        repoDisplay[currentRepo] = '~/src';
+        document.getElementById('promptLabel').textContent = `srinath@${currentRepo}:~/src$`;
+      } else if (trimmed === 'cd ..') {
+        repoDisplay[currentRepo] = '~';
+        document.getElementById('promptLabel').textContent = `srinath@${currentRepo}:~$`;
+      } else if (trimmed.includes('make')) {
+        appendTerminal(`<pre class="text-emerald-400 bg-slate-900/40 p-2 rounded font-mono my-1">gcc -Wall -Wextra -Iinclude -pthread -c src/main.c -o src/main.o\ngcc -Wall -Wextra -Iinclude -pthread -c src/thread.c -o src/thread.o\ngcc -Wall -Wextra -Iinclude -pthread -o bin/shellforge src/main.o src/auth.o src/builtin.o src/executor.o src/pipes.o src/redirect.o src/signals.o src/thread.o -pthread\n[Build Complete: ./bin/shellforge ready]</pre>`);
+      } else if (trimmed.includes('shellforge')) {
+        appendTerminal(`<pre class="text-emerald-300 bg-slate-900/40 p-2 rounded font-mono my-1">========================================\n       SHELLFORGE SECURITY TERMINAL\n========================================\n[SECURITY] Background thread started (TID: 140234)\n[AUTH] Enter username: admin\n[AUTH] Enter password: [OK]\n[AUTH SUCCESS] Authenticated as admin (Role: ADMIN)\nshellforge> ls | wc\n       8       8      56\nshellforge> exit\n[AUTH] User admin logged out.</pre>`);
+      } else {
+        appendTerminal(`<pre class="text-slate-400 bg-slate-900/40 p-2 rounded font-mono my-1">[Offline Sandbox: Executed "${escapeHtml(cmd)}"]\n💡 Launch in GitHub Codespaces to run with full native Linux GCC.</pre>`);
+      }
+    }
+
+    function handleCommandSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('cmdInput');
+      const val = input.value.trim();
+      if (!val) return;
+
+      commandHistory.push(val);
+      historyIndex = commandHistory.length;
+      input.value = '';
+
+      if (val === 'clear') {
+        clearTerminal();
+        return;
+      }
+      if (val === 'help') {
+        appendTerminal(`<div class="text-slate-300 bg-slate-900 p-2 rounded border border-slate-800">
+Commands you can run:<br>
+  - ShellForge: <span class="text-emerald-400">./bin/shellforge</span> or <span class="text-emerald-400">make</span><br>
+  - Practicals: <span class="text-sky-400">./prog1</span>, <span class="text-sky-400">./prog5</span>, <span class="text-sky-400">./prog7_linuxaddr</span>, <span class="text-sky-400">./dynamic_memory</span>, <span class="text-sky-400">./skilling10</span><br>
+  - Navigation: <span class="text-yellow-400">cd src</span>, <span class="text-yellow-400">cd ..</span>, <span class="text-yellow-400">pwd</span>, <span class="text-yellow-400">ls -la</span><br>
+  - Page Replacement: <span class="text-sky-400">./page_replacement</span><br>
+  - System: <span class="text-yellow-400">cat README.md</span>, <span class="text-yellow-400">clear</span>
+</div>`);
+        return;
+      }
+
+      executeCommand(val);
+    }
+
+    // Quick Action Handlers
+    function runShellForgeDemo(type) {
+      switchRepo('shellforge');
+      switchView('terminal');
+
+      if (type === 'auth_pipeline') {
+        executeCommand('./bin/shellforge', 'admin\nadmin123\nls | wc\nexit\n');
+      } else if (type === 'redirection_append') {
+        executeCommand('./bin/shellforge', 'admin\nadmin123\necho Hello From Redirection Studio >> run_log.txt\ncat < run_log.txt\nexit\n');
+      } else if (type === 'builtins_env') {
+        executeCommand('./bin/shellforge', 'admin\nadmin123\npwd\nenv\nhistory\nhelp\nexit\n');
+      } else if (type === 'security_gate') {
+        executeCommand('./bin/shellforge', 'admin\nadmin123\nls; rm -rf /\nexit\n');
+      }
+    }
+
+    function runProgram(binary, inputStr = '') {
+      switchRepo('os_pratical');
+      switchView('terminal');
+      executeCommand(`./${binary}`, inputStr);
+    }
+
+    function runValgrind() {
+      switchRepo('os_pratical');
+      switchView('terminal');
+      executeCommand('valgrind --leak-check=full --show-leak-kinds=all ./dynamic_memory');
+    }
+
+    function runPractical9Copy() {
+      switchRepo('os_pratical');
+      switchView('terminal');
+      executeCommand('echo "OSSP Benchmark Text Data" > src_data.txt && ./copy_lowlevel src_data.txt copy_low.txt && ./copy_stdio src_data.txt copy_stdio.txt && cmp src_data.txt copy_low.txt && cmp src_data.txt copy_stdio.txt && echo "Validation: All copies match!" && rm -f src_data.txt copy_low.txt copy_stdio.txt');
+    }
+
+    function triggerMake(makeCmd) {
+      switchView('terminal');
+      executeCommand(makeCmd);
+    }
+
+    async function fetchAuditLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        document.getElementById('auditLogContent').textContent = data.logs || 'No logs found.';
+      } catch (err) {
+        document.getElementById('auditLogContent').textContent = 'Unable to fetch logs from server: ' + err.message;
+      }
+    }
+
+    // File Browser
+    async function loadFilesList() {
+      const container = document.getElementById('fileList');
+      try {
+        const res = await fetch('/api/files');
+        const data = await res.json();
+        const files = currentRepo === 'shellforge' ? data.shellforge : data.os_pratical;
+        
+        container.innerHTML = '';
+        files.forEach(f => {
+          const btn = document.createElement('button');
+          btn.className = "w-full text-left px-2 py-1.5 rounded hover:bg-slate-800 text-slate-300 font-mono text-[11px] truncate flex items-center gap-1.5 transition";
+          btn.innerHTML = `<span class="text-slate-500">📄</span> <span>${escapeHtml(f)}</span>`;
+          btn.onclick = () => viewSourceCode(f);
+          container.appendChild(btn);
+        });
+      } catch (err) {
+        container.innerHTML = '<div class="text-slate-500 italic p-1">Connect to server.py to browse files</div>';
+      }
+    }
+
+    async function viewSourceCode(filePath) {
+      switchView('source');
+      document.getElementById('currentSourcePath').textContent = `${currentRepo}/${filePath}`;
+      document.getElementById('sourceCodeContent').textContent = "Loading file content...";
+      try {
+        const res = await fetch(`/api/file_content?repo=${currentRepo}&path=${encodeURIComponent(filePath)}`);
+        const data = await res.json();
+        document.getElementById('sourceCodeContent').textContent = data.content || "// Empty file";
+      } catch (err) {
+        document.getElementById('sourceCodeContent').textContent = "// Failed to load file: " + err.message;
+      }
+    }
+
+    // CRT Toggle
+    document.getElementById('toggleCrt').onclick = () => {
+      isCrtEnabled = !isCrtEnabled;
+      const term = document.getElementById('terminalContainer');
+      const status = document.getElementById('crtStatus');
+      if (isCrtEnabled) {
+        term.classList.add('crt');
+        status.textContent = 'ON';
+        status.className = 'text-emerald-400 font-bold';
+      } else {
+        term.classList.remove('crt');
+        status.textContent = 'OFF';
+        status.className = 'text-amber-400 font-bold';
+      }
+    };
+
+    // Keyboard History (Up/Down)
+    document.getElementById('cmdInput').addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') {
+        if (historyIndex > 0) {
+          historyIndex--;
+          e.target.value = commandHistory[historyIndex] || '';
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (historyIndex < commandHistory.length - 1) {
+          historyIndex++;
+          e.target.value = commandHistory[historyIndex] || '';
+        } else {
+          historyIndex = commandHistory.length;
+          e.target.value = '';
+        }
+      }
+    });
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Initialize
+    window.onload = () => {
+      loadFilesList();
+    };
+  </script>
+</body>
+</html>
