@@ -1,17 +1,25 @@
 # RestrictedShell — Secure Command Execution Framework
 
+[![Live Web Terminal](https://img.shields.io/badge/Live_Web_Terminal-Online-brightgreen.svg?style=for-the-badge&logo=gnu-bash)](https://karanamabhinaysai-gif.github.io/A7_OSSP_PROJ/)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/karanamabhinaysai-gif/A7_OSSP_PROJ)
 [![Build & Test](https://img.shields.io/badge/GCC-15.2.0-blue.svg)](https://gcc.gnu.org/)
-[![Terminal Studio](https://img.shields.io/badge/Web_Terminal-Active-emerald.svg)](terminal_app/index.html)
 [![Valgrind](https://img.shields.io/badge/Valgrind-3.26-green.svg)](https://valgrind.org/)
+
+### 🌐 Live Online Terminal: [https://karanamabhinaysai-gif.github.io/A7_OSSP_PROJ/](https://karanamabhinaysai-gif.github.io/A7_OSSP_PROJ/)
 
 A secure, modular, and resilient Linux shell (`rshell`) developed in C for the **Operating Systems and Systems Programming (OSSP)** course. The framework provides user authentication, strict command whitelisting, dangerous character sanitization, built-in commands execution in the parent process, robust process lifecycle synchronization via `waitpid()`, asynchronous signal management (`SIGINT`, `SIGTSTP`, `SIGCHLD`), POSIX multithreading with background telemetry monitors, and tamper-evident audit logging.
 
 ---
 
-## 🚀 Run Live Inside GitHub (Interactive Cloud Terminal)
+## 🚀 Run Live Online in Your Browser (No Setup Needed!)
 
-You can run the entire project in an interactive Linux terminal **directly inside GitHub** in your browser without installing anything locally:
+### Option 1: Live Web Terminal (Instant In-Browser Website)
+👉 **Visit the Live Terminal Website: [https://karanamabhinaysai-gif.github.io/A7_OSSP_PROJ/](https://karanamabhinaysai-gif.github.io/A7_OSSP_PROJ/)**
+- Runs completely in your browser on GitHub Pages.
+- Execute ShellForge (`./bin/shellforge`), pipelines (`ls | wc`), redirection, built-ins, and all practicals (Page replacement, Valgrind, address space, threads) with 1 click!
+- Features interactive C source code inspection, real-time audit logs, and CRT retro scanline styling.
+
+---
 
 ### Option 1: 1-Click GitHub Codespaces (Full Linux VM in GitHub)
 Click the badge above or navigate to:
