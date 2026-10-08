@@ -129,6 +129,14 @@
               <div class="text-[11px] text-slate-400 mt-0.5 font-mono">make asan ➔ 0 leaks detected</div>
             </button>
 
+            <button onclick="openNano('src/main.c')" class="w-full text-left p-2.5 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/60 rounded-lg text-xs transition group">
+              <div class="font-medium text-amber-300 flex items-center justify-between">
+                <span>📝 GNU nano Text Editor</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-900 text-amber-300 border border-amber-700">nano</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">nano src/main.c (In-Terminal)</div>
+            </button>
+
             <button onclick="fetchAuditLogs()" class="w-full text-left p-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 rounded-lg text-xs transition group">
               <div class="font-medium text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
                 <span>📋 View Live Audit Logs</span>
@@ -227,6 +235,9 @@
             <button id="tabTerminal" onclick="switchView('terminal')" class="px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5">
               <span>🖥️ Live Terminal</span>
             </button>
+            <button id="tabNano" onclick="switchView('nano')" class="hidden px-3 py-1 rounded text-xs font-semibold text-amber-400 hover:text-amber-200 flex items-center gap-1.5 border border-amber-500/30">
+              <span>📝 GNU nano 7.2</span>
+            </button>
             <button id="tabSource" onclick="switchView('source')" class="px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
               <span>📄 C Source Inspector</span>
             </button>
@@ -259,7 +270,7 @@ Available Repositories:<br>
   [1] <span class="text-emerald-300 font-semibold">ShellForge (A7_OSSP_PROJ)</span> — Type <span class="text-yellow-400 font-bold">make run</span> or <span class="text-yellow-400 font-bold">./bin/shellforge</span> to login & run interactively!<br>
   [2] <span class="text-sky-300 font-semibold">OS_Pratical</span> — Type <span class="text-yellow-400 font-bold">./page_replacement</span> to input your own page frames and reference numbers!<br>
 <br>
-Type commands below (e.g., <span class="text-yellow-400">make run</span>, <span class="text-yellow-400">cd src</span>, <span class="text-yellow-400">ls -la</span>, <span class="text-yellow-400">pwd</span>, <span class="text-yellow-400">help</span>).
+Type commands below (e.g., <span class="text-yellow-400">nano main.c</span>, <span class="text-yellow-400">make run</span>, <span class="text-yellow-400">cd src</span>, <span class="text-yellow-400">ls -la</span>, <span class="text-yellow-400">cat access.log</span>, <span class="text-yellow-400">help</span>).
           </div>
         </div>
 
@@ -271,7 +282,7 @@ Type commands below (e.g., <span class="text-yellow-400">make run</span>, <span 
             id="cmdInput" 
             autocomplete="off" 
             autofocus 
-            placeholder="Type command or enter data..." 
+            placeholder="Type command, nano &lt;file&gt;, or enter data..." 
             class="flex-1 bg-transparent text-slate-100 outline-none border-none font-mono text-xs sm:text-sm placeholder:text-slate-600"
           >
           <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded transition flex items-center gap-1">
@@ -287,7 +298,12 @@ Type commands below (e.g., <span class="text-yellow-400">make run</span>, <span 
             <span class="text-slate-400">Viewing File:</span>
             <span id="currentSourcePath" class="text-emerald-400 font-bold">src/pipes.c</span>
           </div>
-          <span class="text-[11px] text-slate-500">Syntax Highlighted (C)</span>
+          <div class="flex items-center gap-2">
+            <button onclick="openNanoFromSource()" class="px-2.5 py-1 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/60 rounded text-xs text-amber-300 transition flex items-center gap-1">
+              <span>✏️ Edit in GNU nano</span>
+            </button>
+            <span class="text-[11px] text-slate-500">Syntax Highlighted (C)</span>
+          </div>
         </div>
         <pre id="sourceCodeContent" class="flex-1 overflow-auto custom-scrollbar p-3 bg-slate-950/80 border border-slate-800 rounded-lg text-slate-300 leading-relaxed">
 // Click any file on the left sidebar to inspect its source code...
@@ -310,6 +326,55 @@ Loading access logs...
         </pre>
       </div>
 
+      <!-- VIEW 4: FULL IN-TERMINAL GNU NANO EDITOR -->
+      <div id="viewNano" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-950 font-mono text-xs select-none">
+        <!-- Nano Title Bar -->
+        <div class="bg-slate-200 text-slate-950 px-3 py-1.5 flex items-center justify-between font-bold text-xs shadow">
+          <span class="flex items-center gap-1.5"><span>GNU nano 7.2</span></span>
+          <span id="nanoFilenameDisplay" class="font-mono text-slate-900">File: New Buffer</span>
+          <span id="nanoModifiedStatus" class="text-slate-600 font-semibold">[ Unmodified ]</span>
+        </div>
+
+        <!-- Nano Editor Textarea Area -->
+        <div class="flex-1 flex overflow-hidden p-2 bg-black relative">
+          <textarea 
+            id="nanoEditorText" 
+            spellcheck="false" 
+            class="flex-1 bg-black text-slate-100 font-mono text-xs sm:text-sm p-3 outline-none resize-none leading-relaxed border-none custom-scrollbar"
+            placeholder="// Type code, bash commands, or notes here..."
+            oninput="handleNanoInput()"
+          ></textarea>
+        </div>
+
+        <!-- Nano Status / Message Bar -->
+        <div id="nanoStatusBar" class="bg-slate-900 text-emerald-400 px-3 py-1 text-xs border-t border-slate-800 flex items-center justify-between font-mono">
+          <span id="nanoMsgText">Press Ctrl+O (or click WriteOut) to save. Press Ctrl+X (or click Exit) to return to shell.</span>
+          <span id="nanoLineCount" class="text-slate-500">Lines: 0</span>
+        </div>
+
+        <!-- Nano Bottom Shortcut Toolbar -->
+        <div class="bg-slate-950 border-t border-slate-800 p-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 text-xs select-none">
+          <button onclick="nanoSave()" class="p-1.5 bg-slate-900 hover:bg-emerald-950 text-slate-200 hover:text-emerald-300 rounded border border-slate-800 flex items-center justify-center gap-1.5 transition">
+            <span class="bg-slate-800 px-1 py-0.5 rounded text-emerald-400 font-bold">^O</span> <span>WriteOut</span>
+          </button>
+          <button onclick="nanoExit()" class="p-1.5 bg-slate-900 hover:bg-rose-950 text-slate-200 hover:text-rose-300 rounded border border-slate-800 flex items-center justify-center gap-1.5 transition">
+            <span class="bg-slate-800 px-1 py-0.5 rounded text-rose-400 font-bold">^X</span> <span>Exit</span>
+          </button>
+          <button onclick="nanoInsertTemplate('c')" class="p-1.5 bg-slate-900 hover:bg-sky-950 text-slate-200 hover:text-sky-300 rounded border border-slate-800 flex items-center justify-center gap-1.5 transition">
+            <span class="bg-slate-800 px-1 py-0.5 rounded text-sky-400 font-bold">^T</span> <span>C Template</span>
+          </button>
+          <button onclick="nanoClear()" class="p-1.5 bg-slate-900 hover:bg-amber-950 text-slate-200 hover:text-amber-300 rounded border border-slate-800 flex items-center justify-center gap-1.5 transition">
+            <span class="bg-slate-800 px-1 py-0.5 rounded text-amber-400 font-bold">^K</span> <span>Cut/Clear</span>
+          </button>
+          <button onclick="nanoHelp()" class="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded border border-slate-800 flex items-center justify-center gap-1.5 transition">
+            <span class="bg-slate-800 px-1 py-0.5 rounded text-slate-400 font-bold">^G</span> <span>Get Help</span>
+          </button>
+          <button onclick="nanoExit(true)" class="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded border border-slate-800 flex items-center justify-center gap-1.5 transition">
+            <span class="bg-slate-800 px-1 py-0.5 rounded text-slate-300 font-bold">Esc</span> <span>Cancel</span>
+          </button>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -328,9 +393,12 @@ Loading access logs...
     let isCrtEnabled = false;
 
     // Interactive Mode State
-    let appMode = 'BASH'; // BASH, SHELLFORGE_USER, SHELLFORGE_PASS, SHELLFORGE_CLI, PAGING_ALGO, PAGING_FRAMES, PAGING_REFS, MEM_SIZE, MEM_REALLOC, COPY_TEXT, COPY_DEST
+    let appMode = 'BASH'; // BASH, SHELLFORGE_USER, SHELLFORGE_PASS, SHELLFORGE_CLI, PAGING_ALGO, PAGING_FRAMES, PAGING_REFS, MEM_SIZE, MEM_REALLOC, COPY_TEXT, COPY_DEST, NANO
     let interactiveSession = {};
     let shellforgeCwd = '/workspaces/A7_OSSP_PROJ';
+    let nanoCurrentFile = 'src/main.c';
+    let nanoPreviousMode = 'BASH';
+    let nanoIsModified = false;
 
     let shellAuditLogs = VFS.shellforge['logs/access.log'] || `[2026-10-07 10:14:02] [SESSION_INIT] Security auditor loaded.\n[2026-10-07 10:15:10] [AUTH_SUCCESS] User: admin | Role: ADMIN\n[2026-10-07 10:15:22] [COMMAND_EXEC] ls | wc (Exit: 0)\n[2026-10-07 11:20:05] [HEARTBEAT] Monitor thread active (TID: 140234)\n`;
 
@@ -341,7 +409,7 @@ Loading access logs...
     }
 
     function switchRepo(repo) {
-      if (appMode !== 'BASH') {
+      if (appMode !== 'BASH' && appMode !== 'NANO') {
         appMode = 'BASH';
       }
       currentRepo = repo;
@@ -371,15 +439,26 @@ Loading access logs...
       document.getElementById('viewTerminal').classList.add('hidden');
       document.getElementById('viewSource').classList.add('hidden');
       document.getElementById('viewLogs').classList.add('hidden');
+      const viewNano = document.getElementById('viewNano');
+      if (viewNano) viewNano.classList.add('hidden');
 
       document.getElementById('tabTerminal').className = "px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5";
       document.getElementById('tabSource').className = "px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5";
       document.getElementById('tabLogs').className = "px-3 py-1 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5";
+      const tabNano = document.getElementById('tabNano');
+      if (tabNano) tabNano.className = "px-3 py-1 rounded text-xs font-semibold text-amber-400 hover:text-amber-200 flex items-center gap-1.5 border border-amber-500/30";
 
       if (view === 'terminal') {
         document.getElementById('viewTerminal').classList.remove('hidden');
         document.getElementById('tabTerminal').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
         document.getElementById('cmdInput').focus();
+      } else if (view === 'nano') {
+        if (viewNano) viewNano.classList.remove('hidden');
+        if (tabNano) {
+          tabNano.classList.remove('hidden');
+          tabNano.className = "px-3 py-1 rounded text-xs font-semibold bg-amber-950 text-amber-300 border border-amber-500/60 shadow-sm flex items-center gap-1.5";
+        }
+        setTimeout(() => document.getElementById('nanoEditorText').focus(), 50);
       } else if (view === 'source') {
         document.getElementById('viewSource').classList.remove('hidden');
         document.getElementById('tabSource').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
@@ -388,6 +467,138 @@ Loading access logs...
         document.getElementById('tabLogs').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
         fetchAuditLogs();
       }
+    }
+
+    // GNU NANO 7.2 IN-TERMINAL CONTROLLER
+    function openNano(filePath) {
+      if (!filePath || filePath.trim() === '') filePath = 'untitled.c';
+      filePath = filePath.trim().replace(/^['"]|['"]$/g, '');
+
+      let resolved = filePath;
+      if (appMode === 'SHELLFORGE_CLI') {
+        const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        if (sub && !filePath.includes('/')) {
+          resolved = `${sub}/${filePath}`;
+        }
+      } else {
+        const curDisp = repoDisplay[currentRepo] || '~';
+        const sub = curDisp === '~' ? '' : curDisp.replace('~/', '');
+        if (sub && !filePath.includes('/')) {
+          resolved = `${sub}/${filePath}`;
+        }
+      }
+      resolved = resolved.replace(/^\.\//, '');
+
+      nanoCurrentFile = resolved;
+      nanoPreviousMode = appMode;
+      nanoIsModified = false;
+
+      const repoFiles = VFS[currentRepo] || {};
+      let content = repoFiles[resolved];
+      if (content === undefined && repoFiles[filePath] !== undefined) {
+        resolved = filePath;
+        nanoCurrentFile = filePath;
+        content = repoFiles[filePath];
+      }
+      if (content === undefined && (resolved === 'logs/access.log' || resolved === 'access.log')) {
+        content = shellAuditLogs;
+      }
+
+      const isNew = (content === undefined);
+      if (isNew) {
+        content = '';
+        document.getElementById('nanoMsgText').textContent = `[ New File: ${resolved} ]`;
+      } else {
+        const lines = content.split('\n').length;
+        document.getElementById('nanoMsgText').textContent = `[ Read ${lines} lines from ${resolved} ]`;
+      }
+
+      document.getElementById('nanoEditorText').value = content;
+      document.getElementById('nanoFilenameDisplay').textContent = `File: ${resolved}`;
+      document.getElementById('nanoModifiedStatus').textContent = '[ Unmodified ]';
+      updateNanoLineCount();
+
+      document.getElementById('tabNano').classList.remove('hidden');
+      switchView('nano');
+    }
+
+    function openNanoFromSource() {
+      const p = document.getElementById('currentSourcePath').textContent;
+      const file = p.replace(`${currentRepo}/`, '');
+      openNano(file);
+    }
+
+    function handleNanoInput() {
+      nanoIsModified = true;
+      document.getElementById('nanoModifiedStatus').textContent = '[ Modified ]';
+      updateNanoLineCount();
+    }
+
+    function updateNanoLineCount() {
+      const text = document.getElementById('nanoEditorText').value;
+      const lines = text ? text.split('\n').length : 0;
+      document.getElementById('nanoLineCount').textContent = `Lines: ${lines}`;
+    }
+
+    function nanoSave() {
+      const content = document.getElementById('nanoEditorText').value;
+      if (!VFS[currentRepo]) VFS[currentRepo] = {};
+      VFS[currentRepo][nanoCurrentFile] = content;
+
+      if (nanoCurrentFile === 'logs/access.log' || nanoCurrentFile.endsWith('access.log')) {
+        shellAuditLogs = content;
+      }
+
+      nanoIsModified = false;
+      const lines = content.split('\n').length;
+      document.getElementById('nanoModifiedStatus').textContent = '[ Saved ]';
+      document.getElementById('nanoMsgText').textContent = `[ Wrote ${lines} lines to ${nanoCurrentFile} ]`;
+
+      loadFilesList();
+
+      if (nanoPreviousMode === 'SHELLFORGE_CLI') {
+        shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [NANO_SAVE] User: ${interactiveSession.user || 'admin'} saved '${nanoCurrentFile}' (${lines} lines)\n`;
+      }
+    }
+
+    function nanoExit(discard = false) {
+      if (nanoIsModified && !discard) {
+        nanoSave();
+      }
+      document.getElementById('tabNano').classList.add('hidden');
+      switchView('terminal');
+
+      if (discard) {
+        appendTerminal(`<div class="text-slate-400 font-mono text-xs">[Exited GNU nano 7.2 (Changes discarded)]</div>`);
+      } else {
+        appendTerminal(`<div class="text-emerald-400 font-mono text-xs">[Exited GNU nano 7.2. Successfully wrote to '${escapeHtml(nanoCurrentFile)}']</div>`);
+      }
+
+      if (nanoPreviousMode === 'SHELLFORGE_CLI') {
+        appMode = 'SHELLFORGE_CLI';
+        updatePrompt('shellforge> ', 'text-amber-400');
+      } else {
+        appMode = 'BASH';
+        updatePrompt(`srinath@${currentRepo}:${repoDisplay[currentRepo] || '~'}$`, currentRepo === 'shellforge' ? 'text-emerald-400' : 'text-sky-400');
+      }
+      document.getElementById('cmdInput').focus();
+    }
+
+    function nanoClear() {
+      document.getElementById('nanoEditorText').value = '';
+      handleNanoInput();
+      document.getElementById('nanoMsgText').textContent = `[ Buffer cleared ]`;
+    }
+
+    function nanoInsertTemplate(type) {
+      const tpl = `#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n\nint main(int argc, char *argv[]) {\n    printf("Running custom simulation program...\\n");\n    printf("Process PID: %d, Parent PPID: %d\\n", getpid(), getppid());\n    return 0;\n}\n`;
+      document.getElementById('nanoEditorText').value = tpl;
+      handleNanoInput();
+      document.getElementById('nanoMsgText').textContent = `[ Inserted standard C template ]`;
+    }
+
+    function nanoHelp() {
+      document.getElementById('nanoMsgText').textContent = `GNU nano: Type freely. Ctrl+O (WriteOut) saves to disk. Ctrl+X (Exit) returns to shell.`;
     }
 
     function appendTerminal(htmlContent) {
@@ -539,6 +750,13 @@ Loading access logs...
 
       if (cmd === 'clear') { clearTerminal(); return; }
 
+      // Check for nano editor trigger
+      if (cmd === 'nano' || cmd.startsWith('nano ') || cmd.startsWith('nano')) {
+        const target = cmd.replace(/^nano\s*/, '').trim() || 'untitled.c';
+        openNano(target);
+        return;
+      }
+
       // Check for Interactive ShellForge trigger (make run or ./bin/shellforge)
       if (cmd === 'make run' || cmd === './bin/shellforge' || cmd === 'bin/shellforge' || cmd === './shellforge') {
         startInteractiveShell();
@@ -599,12 +817,49 @@ Loading access logs...
 
       // Check Whitelist vs Forbidden
       const baseCmd = cmd.trim().split(/\s+/)[0];
-      const ALLOWED = ['ls', 'pwd', 'date', 'whoami', 'echo', 'cat', 'clear', 'uname', 'df', 'wc', 'grep', 'ps', 'sort', 'head', 'tail', 'cd', 'help', 'env', 'history', 'exit', 'audit'];
+      const ALLOWED = ['ls', 'pwd', 'date', 'whoami', 'echo', 'cat', 'clear', 'uname', 'df', 'wc', 'grep', 'ps', 'sort', 'head', 'tail', 'cd', 'help', 'env', 'history', 'exit', 'audit', 'nano', 'touch', 'rm', 'more', 'less', 'find'];
       if (!ALLOWED.includes(baseCmd) && !cmd.includes('|') && !cmd.includes('>') && !cmd.includes('<')) {
         appendTerminal(`<div class="text-rose-400 font-mono text-xs font-semibold">[SECURITY VIOLATION] Command "${escapeHtml(baseCmd)}" is RESTRICTED: Not in whitelist!</div>
 <div class="text-slate-400 font-mono text-xs">ShellForge Security: Only authorized system utilities and builtins are permitted.</div>
 <div class="text-amber-400/90 font-mono text-[11px] mt-0.5">Logged security violation to logs/access.log (Audit Alert triggered). Type "help" for allowed commands.</div>`);
         shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [SECURITY_VIOLATION] User: ${interactiveSession.user || 'admin'} | Unauthorized command: "${cmd}" - ACCESS DENIED\n`;
+        return;
+      }
+
+      // BUILTIN/BIN: nano
+      if (cmd === 'nano' || cmd.startsWith('nano ') || cmd.startsWith('nano')) {
+        const target = cmd.replace(/^nano\s*/, '').trim() || 'untitled.c';
+        openNano(target);
+        return;
+      }
+
+      // BUILTIN/BIN: touch
+      if (cmd.startsWith('touch ')) {
+        const target = cmd.substring(6).trim();
+        const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        const fullPath = sub ? `${sub}/${target}` : target;
+        if (VFS.shellforge[fullPath] === undefined) VFS.shellforge[fullPath] = '';
+        loadFilesList();
+        shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [TOUCH] User: ${interactiveSession.user || 'admin'} touched '${fullPath}'\n`;
+        return;
+      }
+
+      // BUILTIN/BIN: rm
+      if (cmd.startsWith('rm ') || cmd.startsWith('rm -f ')) {
+        const target = cmd.replace(/^rm\s+(-f\s+)?/, '').trim();
+        const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        const fullPath = sub ? `${sub}/${target}` : target;
+        if (VFS.shellforge[fullPath] !== undefined) {
+          delete VFS.shellforge[fullPath];
+          loadFilesList();
+          shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [REMOVE] User: ${interactiveSession.user || 'admin'} removed '${fullPath}'\n`;
+          return;
+        } else if (VFS.shellforge[target] !== undefined) {
+          delete VFS.shellforge[target];
+          loadFilesList();
+          return;
+        }
+        appendTerminal(`<div class="text-rose-400 font-mono text-xs">rm: cannot remove '${escapeHtml(target)}': No such file or directory</div>`);
         return;
       }
 
@@ -626,6 +881,24 @@ Pipeline executed cleanly using pipe() and dup2() with zero race conditions.</pr
 
       // Redirection execution (e.g. echo "xyz" >> logs/access.log, echo "test" > note.txt)
       if (cmd.includes('>>') || cmd.includes('>') || cmd.includes('<')) {
+        const isAppend = cmd.includes('>>');
+        const parts = cmd.split(isAppend ? '>>' : '>');
+        if (parts.length >= 2) {
+          let rawText = parts[0].replace(/^echo\s*/, '').trim();
+          if ((rawText.startsWith('"') && rawText.endsWith('"')) || (rawText.startsWith("'") && rawText.endsWith("'"))) {
+            rawText = rawText.slice(1, -1);
+          }
+          const dest = parts[1].trim();
+          const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+          const fullPath = sub && !dest.includes('/') ? `${sub}/${dest}` : dest;
+          if (isAppend && VFS.shellforge[fullPath]) {
+            VFS.shellforge[fullPath] += '\n' + rawText;
+          } else {
+            VFS.shellforge[fullPath] = rawText + '\n';
+          }
+          if (fullPath.includes('access.log')) shellAuditLogs = VFS.shellforge[fullPath];
+          loadFilesList();
+        }
         appendTerminal(`<div class="text-emerald-400 font-mono text-xs">[REDIRECT] Successfully redirected standard I/O streams using dup2() file descriptor binding.</div>`);
         shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [REDIRECT_EXEC] "${cmd}"\n`;
         return;
@@ -714,9 +987,9 @@ tmpfs           7.8G     0  7.8G   0% /dev/shm</pre>`);
       // BUILTIN: help
       if (cmd === 'help') {
         appendTerminal(`<pre class="text-slate-300 bg-slate-900/60 p-2.5 rounded font-mono text-xs">ShellForge v2.5 Whitelist & Built-in Commands:
-  cd, pwd, env, history, clear, help, exit, audit
+  cd, pwd, env, history, clear, help, exit, audit, nano
 Whitelisted System Binaries:
-  ls, pwd, date, whoami, echo, cat, uname, df, wc, grep, ps, sort, head, tail
+  ls, pwd, date, whoami, echo, cat, uname, df, wc, grep, ps, sort, head, tail, touch, rm, find
 Supported Operators:
   cmd1 | cmd2 (Anonymous Pipes)
   cmd > file, cmd >> file, cmd < file (dup2 Redirection)</pre>`);
@@ -741,9 +1014,10 @@ BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
 2  ls
 3  cd logs
 4  cat access.log
-5  cd ..
-6  ls | wc
-7  help</pre>`);
+5  nano main.c
+6  cd ..
+7  ls | wc
+8  help</pre>`);
         return;
       }
 
@@ -771,6 +1045,16 @@ BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
           entries = ['practical8.c', 'practical9_copy.c', 'skilling10_threads.c'];
         }
 
+        // Include any newly created files
+        Object.keys(VFS.shellforge).forEach(k => {
+          if (currentSub === '' && !k.includes('/')) {
+            if (!entries.includes(k)) entries.push(k);
+          } else if (currentSub && k.startsWith(currentSub + '/')) {
+            const subName = k.substring(currentSub.length + 1);
+            if (!subName.includes('/') && !entries.includes(subName)) entries.push(subName);
+          }
+        });
+
         if (cmd.includes('-l')) {
           let outputLines = `total ${entries.length * 4}\n`;
           entries.forEach(e => {
@@ -785,9 +1069,9 @@ BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
         return;
       }
 
-      // COMMAND: cat
-      if (cmd.startsWith('cat ')) {
-        let file = cmd.substring(4).trim();
+      // COMMAND: cat / more / less
+      if (cmd.startsWith('cat ') || cmd.startsWith('more ') || cmd.startsWith('less ')) {
+        let file = cmd.replace(/^(cat|more|less)\s+/, '').trim();
         const currentSub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
         let lookup = file;
         if (currentSub && !file.includes('/')) {
@@ -797,8 +1081,12 @@ BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
           appendTerminal(`<pre class="text-emerald-300 bg-slate-900/60 p-2.5 rounded font-mono text-xs whitespace-pre-wrap max-h-60 overflow-y-auto">${escapeHtml(shellAuditLogs)}</pre>`);
           return;
         }
-        const content = VFS.shellforge[lookup] || VFS.shellforge[file] || VFS.shellforge['src/' + file] || VFS.shellforge['include/' + file];
-        if (content) {
+        let content = VFS.shellforge[lookup] || VFS.shellforge[file] || VFS.shellforge['src/' + file] || VFS.shellforge['include/' + file];
+        if (content === undefined) {
+          const key = Object.keys(VFS.shellforge).find(k => k.endsWith('/' + file) || k === file);
+          if (key) content = VFS.shellforge[key];
+        }
+        if (content !== undefined) {
           appendTerminal(`<pre class="text-slate-200 bg-slate-900/60 p-2.5 rounded font-mono text-xs whitespace-pre-wrap max-h-60 overflow-y-auto">${escapeHtml(content)}</pre>`);
         } else {
           appendTerminal(`<div class="text-rose-400 font-mono text-xs">cat: ${escapeHtml(file)}: No such file or directory</div>`);
@@ -806,10 +1094,70 @@ BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
         return;
       }
 
-      // COMMAND: head / tail / wc
-      if (cmd.startsWith('head ') || cmd.startsWith('tail ') || cmd.startsWith('wc ') || cmd === 'wc') {
-        appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono text-xs">       25      84     780 ${escapeHtml(cmd.split(' ').slice(1).join(' ') || '')}</pre>`);
+      // COMMAND: grep
+      if (cmd.startsWith('grep ')) {
+        const parts = cmd.split(/\s+/).slice(1);
+        if (parts.length >= 2) {
+          const pat = parts[0].replace(/['"]/g, '');
+          const file = parts[1];
+          const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+          const lookup = sub ? `${sub}/${file}` : file;
+          let content = VFS.shellforge[lookup] || VFS.shellforge[file];
+          if (content === undefined && file.includes('access.log')) content = shellAuditLogs;
+          if (content !== undefined) {
+            const matches = content.split('\n').filter(l => l.includes(pat));
+            if (matches.length > 0) {
+              appendTerminal(`<pre class="text-emerald-300 font-mono text-xs">${escapeHtml(matches.join('\n'))}</pre>`);
+            } else {
+              appendTerminal(`<div class="text-slate-400 font-mono text-xs">grep: no matches found for "${escapeHtml(pat)}"</div>`);
+            }
+            return;
+          }
+          appendTerminal(`<div class="text-rose-400 font-mono text-xs">grep: ${escapeHtml(file)}: No such file or directory</div>`);
+          return;
+        }
+      }
+
+      // COMMAND: find
+      if (cmd.startsWith('find')) {
+        const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        const entries = Object.keys(VFS.shellforge)
+          .filter(k => !sub || k.startsWith(sub + '/'))
+          .map(k => './' + (sub ? k.substring(sub.length + 1) : k));
+        appendTerminal(`<pre class="text-slate-200 font-mono text-xs">${escapeHtml(entries.join('\n'))}</pre>`);
         return;
+      }
+
+      // COMMAND: wc
+      if (cmd.startsWith('wc ') || cmd === 'wc') {
+        const file = cmd.replace(/^wc\s*/, '').trim();
+        const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        const lookup = sub ? `${sub}/${file}` : file;
+        let content = VFS.shellforge[lookup] || VFS.shellforge[file];
+        if (content === undefined && file.includes('access.log')) content = shellAuditLogs;
+        if (content !== undefined) {
+          const lines = content.split('\n').length;
+          const words = content.trim().split(/\s+/).filter(Boolean).length;
+          const bytes = content.length;
+          appendTerminal(`<pre class="text-slate-200 font-mono text-xs"> ${lines}  ${words} ${bytes} ${escapeHtml(file)}</pre>`);
+          return;
+        }
+      }
+
+      // COMMAND: head / tail
+      if (cmd.startsWith('head ') || cmd.startsWith('tail ')) {
+        const isHead = cmd.startsWith('head ');
+        const file = cmd.replace(/^(head|tail)\s+/, '').trim();
+        const sub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        const lookup = sub ? `${sub}/${file}` : file;
+        let content = VFS.shellforge[lookup] || VFS.shellforge[file];
+        if (content === undefined && file.includes('access.log')) content = shellAuditLogs;
+        if (content !== undefined) {
+          const lines = content.split('\n');
+          const sliced = isHead ? lines.slice(0, 10) : lines.slice(-10);
+          appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono text-xs">${escapeHtml(sliced.join('\n'))}</pre>`);
+          return;
+        }
       }
 
       appendTerminal(`<div class="text-slate-300 font-mono text-xs">[Executed in ShellForge: "${escapeHtml(cmd)}" (Status: 0)]</div>`);
@@ -987,15 +1335,121 @@ Choose Algorithm to Simulate:
         }
       }
 
-      if (trimmed.startsWith('cat ')) {
-        const filePath = trimmed.substring(4).trim().replace(/^<\s*/, '');
+      if (trimmed.startsWith('cat ') || trimmed.startsWith('more ') || trimmed.startsWith('less ')) {
+        const filePath = trimmed.replace(/^(cat|more|less)\s+/, '').trim().replace(/^<\s*/, '');
         const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
         const c1 = prefix + filePath;
         const c2 = filePath;
-        if (repoFiles[c1]) return { stdout: repoFiles[c1], stderr: '' };
-        if (repoFiles[c2]) return { stdout: repoFiles[c2], stderr: '' };
+        if (repoFiles[c1] !== undefined) return { stdout: repoFiles[c1], stderr: '' };
+        if (repoFiles[c2] !== undefined) return { stdout: repoFiles[c2], stderr: '' };
         if (c2.includes('access.log')) return { stdout: shellAuditLogs, stderr: '' };
+        const key = Object.keys(repoFiles).find(k => k.endsWith('/' + filePath) || k === filePath);
+        if (key && repoFiles[key] !== undefined) return { stdout: repoFiles[key], stderr: '' };
         return { stdout: '', stderr: `cat: ${filePath}: No such file or directory` };
+      }
+
+      if (trimmed.startsWith('touch ')) {
+        const target = trimmed.substring(6).trim();
+        if (target) {
+          if (!VFS[currentRepo]) VFS[currentRepo] = {};
+          const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
+          const fullPath = prefix + target;
+          if (VFS[currentRepo][fullPath] === undefined) {
+            VFS[currentRepo][fullPath] = '';
+          }
+          loadFilesList();
+          return { stdout: '', stderr: '' };
+        }
+      }
+
+      if (trimmed.startsWith('rm ') || trimmed.startsWith('rm -f ')) {
+        const target = trimmed.replace(/^rm\s+(-f\s+)?/, '').trim();
+        const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
+        const p1 = prefix + target;
+        if (VFS[currentRepo] && VFS[currentRepo][p1] !== undefined) {
+          delete VFS[currentRepo][p1];
+          loadFilesList();
+          return { stdout: '', stderr: '' };
+        } else if (VFS[currentRepo] && VFS[currentRepo][target] !== undefined) {
+          delete VFS[currentRepo][target];
+          loadFilesList();
+          return { stdout: '', stderr: '' };
+        }
+        return { stdout: '', stderr: `rm: cannot remove '${target}': No such file or directory` };
+      }
+
+      if (trimmed.startsWith('echo ') && (trimmed.includes('>') || trimmed.includes('>>'))) {
+        const isAppend = trimmed.includes('>>');
+        const parts = trimmed.split(isAppend ? '>>' : '>');
+        if (parts.length >= 2) {
+          let rawText = parts[0].replace(/^echo\s*/, '').trim();
+          if ((rawText.startsWith('"') && rawText.endsWith('"')) || (rawText.startsWith("'") && rawText.endsWith("'"))) {
+            rawText = rawText.slice(1, -1);
+          }
+          const dest = parts[1].trim();
+          const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
+          const fullPath = prefix + dest;
+          if (!VFS[currentRepo]) VFS[currentRepo] = {};
+          if (isAppend && VFS[currentRepo][fullPath]) {
+            VFS[currentRepo][fullPath] += '\n' + rawText;
+          } else {
+            VFS[currentRepo][fullPath] = rawText + '\n';
+          }
+          if (fullPath.includes('access.log')) shellAuditLogs = VFS[currentRepo][fullPath];
+          loadFilesList();
+          return { stdout: `[Successfully written to ${dest}]`, stderr: '' };
+        }
+      }
+
+      if (trimmed.startsWith('grep ')) {
+        const parts = trimmed.split(/\s+/).slice(1);
+        if (parts.length >= 2) {
+          const pat = parts[0].replace(/['"]/g, '');
+          const filePath = parts[1];
+          const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
+          let content = repoFiles[prefix + filePath] || repoFiles[filePath];
+          if (content === undefined && filePath.includes('access.log')) content = shellAuditLogs;
+          if (content !== undefined) {
+            const matches = content.split('\n').filter(l => l.includes(pat));
+            return { stdout: matches.length > 0 ? matches.join('\n') : '', stderr: '' };
+          }
+          return { stdout: '', stderr: `grep: ${filePath}: No such file or directory` };
+        }
+      }
+
+      if (trimmed.startsWith('wc ') || trimmed === 'wc') {
+        const filePath = trimmed.replace(/^wc\s*/, '').trim();
+        if (filePath) {
+          const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
+          let content = repoFiles[prefix + filePath] || repoFiles[filePath];
+          if (content === undefined && filePath.includes('access.log')) content = shellAuditLogs;
+          if (content !== undefined) {
+            const lines = content.split('\n').length;
+            const words = content.trim().split(/\s+/).filter(Boolean).length;
+            const bytes = content.length;
+            return { stdout: ` ${lines}  ${words} ${bytes} ${filePath}`, stderr: '' };
+          }
+          return { stdout: '', stderr: `wc: ${filePath}: No such file or directory` };
+        }
+      }
+
+      if (trimmed.startsWith('head ') || trimmed.startsWith('tail ')) {
+        const isHead = trimmed.startsWith('head ');
+        const filePath = trimmed.replace(/^(head|tail)\s+/, '').trim();
+        const prefix = currentDisp === '~' ? '' : currentDisp.replace('~/', '') + '/';
+        let content = repoFiles[prefix + filePath] || repoFiles[filePath];
+        if (content === undefined && filePath.includes('access.log')) content = shellAuditLogs;
+        if (content !== undefined) {
+          const lines = content.split('\n');
+          const sliced = isHead ? lines.slice(0, 10) : lines.slice(-10);
+          return { stdout: sliced.join('\n'), stderr: '' };
+        }
+        return { stdout: '', stderr: `${isHead ? 'head' : 'tail'}: cannot open '${filePath}' for reading: No such file or directory` };
+      }
+
+      if (trimmed.startsWith('find')) {
+        const files = Object.keys(repoFiles).map(f => './' + f);
+        return { stdout: files.join('\n'), stderr: '' };
       }
 
       if (trimmed === 'make' || trimmed === 'make all') {
@@ -1212,6 +1666,29 @@ Race condition check: ZERO DATA CORRUPTION (PASSED)</pre>`);
           historyIndex = commandHistory.length;
           e.target.value = '';
         }
+      }
+    });
+
+    document.getElementById('nanoEditorText').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'o' || e.key === 'O' || e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        nanoSave();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X')) {
+        e.preventDefault();
+        nanoExit();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        nanoClear();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        nanoExit();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        e.target.value = e.target.value.substring(0, start) + "    " + e.target.value.substring(end);
+        e.target.selectionStart = e.target.selectionEnd = start + 4;
+        handleNanoInput();
       }
     });
 
