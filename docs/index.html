@@ -478,7 +478,9 @@ Loading access logs...
         const contentElem = document.getElementById('sourceCodeContent');
         if (!contentElem.textContent || contentElem.textContent.includes('Click any file')) {
           const defaultFile = currentRepo === 'shellforge' ? 'src/pipes.c' : 'page_replacement.c';
-          viewSourceCode(defaultFile);
+          document.getElementById('currentSourcePath').textContent = `${currentRepo}/${defaultFile}`;
+          const repoFiles = VFS[currentRepo] || {};
+          contentElem.textContent = repoFiles[defaultFile] || "// File not found";
         }
       } else if (view === 'logs') {
         document.getElementById('viewLogs').classList.remove('hidden');
@@ -1781,7 +1783,6 @@ Race condition check: ZERO DATA CORRUPTION (PASSED)</pre>`);
     }
 
     function fetchAuditLogs() {
-      switchView('logs');
       document.getElementById('auditLogContent').textContent = shellAuditLogs;
     }
 
