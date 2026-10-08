@@ -79,8 +79,18 @@
         </div>
       </div>
 
-      <!-- Quick Action Presets -->
-      <div>
+      <!-- Sidebar View Switcher: Presets vs File Explorer -->
+      <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+        <button id="sideTabPresets" onclick="switchSidebarTab('presets')" class="flex-1 py-1.5 px-2 rounded font-semibold bg-slate-800 text-white transition text-center shadow-sm">
+          ⚡ Presets
+        </button>
+        <button id="sideTabFiles" onclick="switchSidebarTab('files')" class="flex-1 py-1.5 px-2 rounded font-semibold text-slate-400 hover:text-slate-200 transition text-center">
+          📁 All Files (<span id="fileCountBadge">24</span>)
+        </button>
+      </div>
+
+      <!-- Section A: Quick Action Presets -->
+      <div id="presetsSection">
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quick Execute Presets</label>
           <span class="text-[10px] text-emerald-400 font-mono">1-Click Run</span>
@@ -199,10 +209,13 @@
         </div>
       </div>
 
-      <!-- File Browser -->
-      <div>
-        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Source Code Inspector</label>
-        <div id="fileList" class="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar text-xs">
+      <!-- Section B: File Browser / Explorer -->
+      <div id="fileListSection" class="hidden flex-1 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Repository Files</label>
+          <span class="text-[10px] text-amber-400 font-mono">Click to view/edit</span>
+        </div>
+        <div id="fileList" class="flex flex-col gap-1 overflow-y-auto custom-scrollbar text-xs flex-1 max-h-72">
           <div class="text-slate-500 italic p-1">Loading repository files...</div>
         </div>
       </div>
@@ -462,10 +475,33 @@ Loading access logs...
       } else if (view === 'source') {
         document.getElementById('viewSource').classList.remove('hidden');
         document.getElementById('tabSource').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
+        const contentElem = document.getElementById('sourceCodeContent');
+        if (!contentElem.textContent || contentElem.textContent.includes('Click any file')) {
+          const defaultFile = currentRepo === 'shellforge' ? 'src/pipes.c' : 'page_replacement.c';
+          viewSourceCode(defaultFile);
+        }
       } else if (view === 'logs') {
         document.getElementById('viewLogs').classList.remove('hidden');
         document.getElementById('tabLogs').className = "px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5";
         fetchAuditLogs();
+      }
+    }
+
+    function switchSidebarTab(tab) {
+      const pTab = document.getElementById('sideTabPresets');
+      const fTab = document.getElementById('sideTabFiles');
+      const pBox = document.getElementById('presetsSection');
+      const fBox = document.getElementById('fileListSection');
+      if (tab === 'presets') {
+        pTab.className = "flex-1 py-1.5 px-2 rounded font-semibold bg-slate-800 text-white transition text-center shadow-sm";
+        fTab.className = "flex-1 py-1.5 px-2 rounded font-semibold text-slate-400 hover:text-slate-200 transition text-center";
+        pBox.classList.remove('hidden');
+        fBox.classList.add('hidden');
+      } else {
+        fTab.className = "flex-1 py-1.5 px-2 rounded font-semibold bg-slate-800 text-white transition text-center shadow-sm";
+        pTab.className = "flex-1 py-1.5 px-2 rounded font-semibold text-slate-400 hover:text-slate-200 transition text-center";
+        fBox.classList.remove('hidden');
+        pBox.classList.add('hidden');
       }
     }
 
@@ -1625,12 +1661,22 @@ Race condition check: ZERO DATA CORRUPTION (PASSED)</pre>`);
       const repoFiles = VFS[currentRepo] || {};
       const fileNames = Object.keys(repoFiles).sort();
 
+      const badge = document.getElementById('fileCountBadge');
+      if (badge) badge.textContent = fileNames.length;
+
       fileNames.forEach(f => {
-        const btn = document.createElement('button');
-        btn.className = "w-full text-left px-2 py-1.5 rounded hover:bg-slate-800 text-slate-300 font-mono text-[11px] truncate flex items-center gap-1.5 transition";
-        btn.innerHTML = `<span class="text-slate-500">📄</span> <span>${escapeHtml(f)}</span>`;
-        btn.onclick = () => viewSourceCode(f);
-        container.appendChild(btn);
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-1 rounded hover:bg-slate-800 group transition gap-1";
+        row.innerHTML = `
+          <button onclick="viewSourceCode('${escapeHtml(f)}')" class="flex-1 text-left font-mono text-[11px] truncate flex items-center gap-1.5 text-slate-300 hover:text-white">
+            <span class="text-slate-500">📄</span>
+            <span class="truncate">${escapeHtml(f)}</span>
+          </button>
+          <button onclick="openNano('${escapeHtml(f)}')" class="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded bg-amber-950/80 hover:bg-amber-900 text-amber-300 text-[10px] font-mono border border-amber-600/40 transition" title="Edit in GNU nano">
+            nano
+          </button>
+        `;
+        container.appendChild(row);
       });
     }
 
@@ -1703,6 +1749,12 @@ Race condition check: ZERO DATA CORRUPTION (PASSED)</pre>`);
 
     window.onload = () => {
       loadFilesList();
+      const defaultFile = currentRepo === 'shellforge' ? 'src/pipes.c' : 'page_replacement.c';
+      const repoFiles = VFS[currentRepo] || {};
+      if (repoFiles[defaultFile]) {
+        document.getElementById('currentSourcePath').textContent = `${currentRepo}/${defaultFile}`;
+        document.getElementById('sourceCodeContent').textContent = repoFiles[defaultFile];
+      }
     };
   </script>
 </body>
