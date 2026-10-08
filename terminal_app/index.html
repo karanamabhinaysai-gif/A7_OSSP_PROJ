@@ -620,7 +620,58 @@ Loading access logs...
       if (trimmed === 'make clean') {
         return {
           exit_code: 0,
-          stdout: `rm -f src/*.o bin/shellforge output.txt copy_*.txt`,
+          stdout: `rm -f src/*.o bin/shellforge output.txt copy_*.txt
+Clean completed.`,
+          stderr: ''
+        };
+      }
+
+      if (trimmed === 'make run') {
+        return {
+          exit_code: 0,
+          stdout: `gcc -Wall -Wextra -g -Iinclude src/main.c src/auth.c src/executor.c src/builtin.c src/signals.c src/pipes.c src/redirect.c src/thread.c -pthread -o bin/shellforge
+Build successful: bin/shellforge
+mkdir -p logs
+./bin/shellforge
+==================================================
+        RESTRICTED SHELL (SHELLFORGE) v2.5
+  Multi-User Login | Whitelisting | Concurrency
+==================================================
+[SECURITY] Background telemetry thread active (TID: 0x7fa28c)
+[AUTH] Enter username: admin
+[AUTH] Enter password: [OK]
+[AUTH SUCCESS] Authenticated as admin (Role: ADMIN)
+
+shellforge> pwd
+/workspaces/A7_OSSP_PROJ
+shellforge> ls | wc
+       8       8      56
+shellforge> echo "Session validated" >> logs/access.log
+[REDIRECT] Appended to logs/access.log
+shellforge> exit
+[AUTH] User admin logged out. Terminating safely.`,
+          stderr: ''
+        };
+      }
+
+      if (trimmed === 'make valgrind') {
+        return {
+          exit_code: 0,
+          stdout: `mkdir -p logs
+valgrind --leak-check=full --show-leak-kinds=all ./bin/shellforge
+==28502== Memcheck, a memory error detector for x86_64-linux
+==28502== Command: ./bin/shellforge
+==================================================
+        RESTRICTED SHELL (SHELLFORGE) v2.5
+==================================================
+[AUTH] User admin logged out.
+==28502== 
+==28502== HEAP SUMMARY:
+==28502==     in use at exit: 0 bytes in 0 blocks
+==28502==   total heap usage: 12 allocs, 12 frees, 4,096 bytes allocated
+==28502== 
+==28502== All heap blocks were freed -- no leaks are possible
+==28502== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)`,
           stderr: ''
         };
       }
@@ -628,7 +679,9 @@ Loading access logs...
       if (trimmed === 'make asan') {
         return {
           exit_code: 0,
-          stdout: `gcc -Wall -Wextra -Iinclude -pthread -fsanitize=address -g src/main.c src/auth.c src/builtin.c src/executor.c src/pipes.c src/redirect.c src/signals.c src/thread.c -o bin/shellforge_asan -pthread\n[AddressSanitizer Build Complete: bin/shellforge_asan ready with 0 leak errors]`,
+          stdout: `gcc -Wall -Wextra -Iinclude -pthread -fsanitize=address -g src/main.c src/auth.c src/builtin.c src/executor.c src/pipes.c src/redirect.c src/signals.c src/thread.c -o bin/shellforge_asan -pthread
+Build successful with AddressSanitizer: bin/shellforge_asan
+[AddressSanitizer: Zero memory corruption or use-after-free detected]`,
           stderr: ''
         };
       }
@@ -637,7 +690,23 @@ Loading access logs...
       if (trimmed === './bin/shellforge' || trimmed === 'bin/shellforge' || trimmed === './shellforge') {
         return {
           exit_code: 0,
-          stdout: `==================================================\n        RESTRICTED SHELL (SHELLFORGE) v2.5\n  Multi-User Login | Whitelisting | Concurrency\n==================================================\n[SECURITY] Background telemetry thread active (TID: 0x7fa28c)\n[AUTH] Enter username: admin\n[AUTH] Enter password: [OK]\n[AUTH SUCCESS] Authenticated as admin (Role: ADMIN)\n\nshellforge> pwd\n/workspaces/A7_OSSP_PROJ\nshellforge> ls | wc\n       8       8      56\nshellforge> echo "Testing Session" >> logs/access.log\n[REDIRECT] Appended to logs/access.log\nshellforge> exit\n[AUTH] User admin logged out. Terminating safely.`,
+          stdout: `==================================================
+        RESTRICTED SHELL (SHELLFORGE) v2.5
+  Multi-User Login | Whitelisting | Concurrency
+==================================================
+[SECURITY] Background telemetry thread active (TID: 0x7fa28c)
+[AUTH] Enter username: admin
+[AUTH] Enter password: [OK]
+[AUTH SUCCESS] Authenticated as admin (Role: ADMIN)
+
+shellforge> pwd
+/workspaces/A7_OSSP_PROJ
+shellforge> ls | wc
+       8       8      56
+shellforge> echo "Testing Session" >> logs/access.log
+[REDIRECT] Appended to logs/access.log
+shellforge> exit
+[AUTH] User admin logged out. Terminating safely.`,
           stderr: ''
         };
       }
