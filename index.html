@@ -782,6 +782,111 @@ Loading access logs...
       }
     }
 
+    // EDUCATIONAL OS CONCEPT EXPLAINER
+    function getCommandExplanation(rawCmd) {
+      if (!rawCmd) return null;
+      const cmd = rawCmd.trim();
+      const base = cmd.split(/\s+/)[0];
+
+      if (cmd.includes(';') || cmd.includes('&&') || cmd.includes('||')) {
+        return 'Security Enforcement: Restricted Shell command parser rejects metacharacters (;&|`$\\) to block command injection, privilege escalation, and unauthorized shell breakout.';
+      }
+      if (cmd.includes('|')) {
+        return 'Anonymous Kernel Pipes (|): Invokes pipe() to allocate an in-memory kernel ring buffer and dup2() to bind the writer stdout to reader stdin, streaming data with zero disk I/O.';
+      }
+      if (cmd.includes('>>') || cmd.includes('>') || cmd.includes('<')) {
+        return 'I/O Redirection: Issues open() with O_CREAT|O_WRONLY/O_APPEND flags and dup2() to rebind standard stream file descriptors (stdin/stdout) to target disk files.';
+      }
+      if (base === 'ls') {
+        return 'Directory Traversal (ls): Invokes opendir() and readdir() system calls to inspect directory inode tables and extract d_name directory entries from the virtual filesystem.';
+      }
+      if (base === 'pwd') {
+        return 'Print Working Directory (pwd): Calls getcwd() system call, resolving parent inode links ("..") back to the root mount "/" to return the process\'s absolute pathname.';
+      }
+      if (base === 'cd') {
+        return 'Change Directory (cd): Executes chdir() system call to update the active working directory inode pointer inside the process\'s kernel Process Control Block (PCB).';
+      }
+      if (base === 'cat' || base === 'more' || base === 'less') {
+        return 'File Streaming (cat): Opens file descriptor via open(), reads stream chunks into a user-space memory buffer using read(), and flushes bytes to stdout via write(1, buf, count).';
+      }
+      if (base === 'nano') {
+        return 'Interactive Text Editor (nano): Configures the TTY terminal device driver into raw non-canonical mode via tcsetattr() and termios, capturing keystrokes without waiting for Enter.';
+      }
+      if (cmd.includes('shellforge') || cmd === 'make run') {
+        return 'Restricted Shell (ShellForge): Spawns custom shell environment featuring SHA credential authentication, command whitelisting, background telemetry threads, and audit trail logging.';
+      }
+      if (cmd.includes('page_replacement')) {
+        return 'Virtual Memory Paging: Simulates Memory Management Unit (MMU) page fault handling, calculating Page Faults and Page Hits under FIFO, LRU, Optimal, and MRU replacement algorithms.';
+      }
+      if (cmd.includes('dynamic_memory')) {
+        return 'Heap Memory Management: Allocates dynamic heap memory via brk()/sbrk() and mmap() system calls, expanding process memory segments and verifying zero memory leaks.';
+      }
+      if (cmd.includes('copy_lowlevel')) {
+        return 'Low-Level System Call Benchmark: Directly benchmarks POSIX kernel system calls open(), read(), write(), and close() with explicit block buffers.';
+      }
+      if (cmd.includes('copy_stdio')) {
+        return 'Standard I/O Library Benchmark: Benchmarks user-space buffered streams fopen(), fread(), fwrite(), and fclose() with user-space buffer caches.';
+      }
+      if (cmd.includes('valgrind') || cmd.includes('asan')) {
+        return 'Memory Sanitization: Performs runtime shadow memory tracking and dynamic binary instrumentation to detect buffer overflows, use-after-free, and memory leaks.';
+      }
+      if (cmd.includes('cow_demo')) {
+        return 'Copy-on-Write (COW): fork() shares physical RAM pages read-only between parent and child; MMU triggers Page Fault to clone a 4KB page only upon write mutation.';
+      }
+      if (cmd.includes('skilling10') || cmd.includes('thread')) {
+        return 'POSIX Threads & Concurrency: Spawns lightweight kernel execution threads via pthread_create() and synchronizes shared memory access using pthread_mutex_t locks.';
+      }
+      if (base === 'whoami') {
+        return 'Process Identity (whoami): Invokes geteuid() system call to retrieve the Effective User ID and security privilege level of the calling process.';
+      }
+      if (base === 'date') {
+        return 'System Clock (date): Calls clock_gettime(CLOCK_REALTIME) to query hardware RTC epoch seconds and formats human-readable UTC timestamp.';
+      }
+      if (base === 'uname') {
+        return 'Kernel Telemetry (uname): Calls uname(&utsname) system call to inspect kernel sysname, release version, machine hardware architecture (x86_64), and OS type.';
+      }
+      if (base === 'df') {
+        return 'Filesystem Allocation (df): Issues statvfs() system call to query mounted filesystem superblock geometry, calculating free vs allocated storage blocks and inodes.';
+      }
+      if (base === 'ps') {
+        return 'Process Table (ps): Traverses the virtual /proc filesystem to inspect active PIDs, execution states (Running/Sleeping/Zombie), and thread telemetry.';
+      }
+      if (base === 'touch') {
+        return 'File Creation / Timestamp (touch): Issues open(O_CREAT|O_WRONLY) to allocate a new directory inode, or utimes() to update access and modification timestamps.';
+      }
+      if (base === 'rm') {
+        return 'Inode Unlinking (rm): Calls unlink() system call to remove directory entry and decrement inode link count; kernel frees blocks when link count drops to 0.';
+      }
+      if (base === 'echo') {
+        return 'Standard Output Write (echo): Parses arguments and writes character buffer directly to file descriptor 1 (STDOUT_FILENO) using the write() system call.';
+      }
+      if (base === 'grep') {
+        return 'Pattern Filter (grep): Streams file descriptors line-by-line and evaluates regular expression state automata to filter matching text lines.';
+      }
+      if (base === 'wc') {
+        return 'Word/Line Counter (wc): Sequentially scans byte stream, incrementing newline (\\n) counters and whitespace state transitions to count lines, words, and characters.';
+      }
+      if (base === 'find') {
+        return 'Filesystem Search (find): Recursively walks the directory tree starting from target path using readdir() and stat() to match file attributes.';
+      }
+      if (base === 'clear') {
+        return 'Terminal Control (clear): Sends ANSI escape sequence "\\033[2J\\033[H" to reset cursor position and clear the terminal display buffer.';
+      }
+      if (base === 'help') {
+        return 'Security Policy (help): Lists authorized builtins, whitelisted binaries, and supported syntax operators in the restricted shell.';
+      }
+      if (base === 'exit' || base === 'quit') {
+        return 'Process Termination (exit): Issues exit_group() system call, closing open file descriptors, releasing child process memory, and returning exit code to parent.';
+      }
+      if (base === 'make' || base === 'make clean') {
+        return 'Build Automation (make): Evaluates Makefile dependency Directed Acyclic Graph (DAG), invoking GCC compiler passes to assemble and link binary executables.';
+      }
+      if (base === 'audit') {
+        return 'Security Audit Trail: Inspects append-only security logs tracking authentication events, executed commands, and detected security violations.';
+      }
+      return `Process Execution: Spawns child process via fork() + execve("${base}"); OS allocates virtual address space (Text, Data, BSS, Heap, Stack) and schedules CPU time slices.`;
+    }
+
     // BASH COMMAND HANDLER
     function handleBashState(cmd) {
       if (!cmd) return;
@@ -789,6 +894,15 @@ Loading access logs...
       appendTerminal(`<div class="text-slate-400 flex items-center gap-2 mt-2"><span class="${promptColor} font-bold">srinath@${currentRepo}:${repoDisplay[currentRepo] || '~'}$</span> <span class="text-white font-semibold">${escapeHtml(cmd)}</span></div>`);
 
       if (cmd === 'clear') { clearTerminal(); return; }
+
+      // Explain typed command in terms of OS concepts
+      const exp = getCommandExplanation(cmd);
+      if (exp) {
+        appendTerminal(`<div class="flex items-start gap-1.5 p-1.5 my-1 bg-indigo-950/40 border border-indigo-700/50 rounded text-[11px] font-mono text-indigo-200">
+          <span class="text-indigo-400 font-bold select-none whitespace-nowrap">💡 [OS CONCEPT]:</span>
+          <span class="text-indigo-200 leading-relaxed">${escapeHtml(exp)}</span>
+        </div>`);
+      }
 
       // Check for nano editor trigger
       if (cmd === 'nano' || cmd.startsWith('nano ') || cmd.startsWith('nano')) {
@@ -838,6 +952,13 @@ Loading access logs...
       if (!cmd) return;
 
       if (cmd === 'exit' || cmd === 'quit') {
+        const exitExp = getCommandExplanation('exit');
+        if (exitExp) {
+          appendTerminal(`<div class="flex items-start gap-1.5 p-1.5 my-1 bg-amber-950/40 border border-amber-700/50 rounded text-[11px] font-mono text-amber-200">
+            <span class="text-amber-400 font-bold select-none whitespace-nowrap">💡 [OS CONCEPT]:</span>
+            <span class="text-amber-200 leading-relaxed">${escapeHtml(exitExp)}</span>
+          </div>`);
+        }
         appendTerminal(`<div class="text-slate-400">[AUTH] User ${interactiveSession.user} logged out. Terminating ShellForge session safely.</div>`);
         shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [LOGOUT] User: ${interactiveSession.user}\n`;
         appMode = 'BASH';
@@ -847,6 +968,15 @@ Loading access logs...
       }
 
       if (cmd === 'clear') { clearTerminal(); return; }
+
+      // Explain typed command in terms of OS concepts
+      const exp = getCommandExplanation(cmd);
+      if (exp) {
+        appendTerminal(`<div class="flex items-start gap-1.5 p-1.5 my-1 bg-amber-950/40 border border-amber-700/50 rounded text-[11px] font-mono text-amber-200">
+          <span class="text-amber-400 font-bold select-none whitespace-nowrap">💡 [OS CONCEPT]:</span>
+          <span class="text-amber-200 leading-relaxed">${escapeHtml(exp)}</span>
+        </div>`);
+      }
 
       // Security metacharacter blocking (; && || ` $\)
       if (cmd.includes(';') || cmd.includes('&&') || cmd.includes('||') || cmd.includes('`') || cmd.includes('$') || cmd.includes('\\')) {
