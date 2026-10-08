@@ -886,7 +886,7 @@ Loading access logs...
       if (base === 'audit') {
         return 'Security Audit Trail: Inspects append-only security logs tracking authentication events, executed commands, and detected security violations.';
       }
-      return `Process Execution: Spawns child process via fork() + execve("${base}"); OS allocates virtual address space (Text, Data, BSS, Heap, Stack) and schedules CPU time slices.`;
+      return `Command Resolution ($PATH): Shell searches directories in $PATH (/usr/bin, /bin). If not found, kernel cannot issue execve("${base}") -> Command Not Found (Exit: 127).`;
     }
 
     // BASH COMMAND HANDLER
@@ -1701,9 +1701,10 @@ Choose Algorithm to Simulate:
         };
       }
 
+      const firstWord = trimmed.split(/\s+/)[0];
       return {
-        stdout: `Executed in OSSP Cloud Engine: "${trimmed}"\n[Result: Process exited with status code 0]`,
-        stderr: ''
+        stdout: '',
+        stderr: `bash: ${firstWord}: command not found (searched $PATH, return code 127)\nType 'help' or 'ls' for valid system commands and executables.`
       };
     }
 
