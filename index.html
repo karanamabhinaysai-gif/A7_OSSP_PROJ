@@ -330,6 +330,7 @@ Loading access logs...
     // Interactive Mode State
     let appMode = 'BASH'; // BASH, SHELLFORGE_USER, SHELLFORGE_PASS, SHELLFORGE_CLI, PAGING_ALGO, PAGING_FRAMES, PAGING_REFS, MEM_SIZE, MEM_REALLOC, COPY_TEXT, COPY_DEST
     let interactiveSession = {};
+    let shellforgeCwd = '/workspaces/A7_OSSP_PROJ';
 
     let shellAuditLogs = VFS.shellforge['logs/access.log'] || `[2026-10-07 10:14:02] [SESSION_INIT] Security auditor loaded.\n[2026-10-07 10:15:10] [AUTH_SUCCESS] User: admin | Role: ADMIN\n[2026-10-07 10:15:22] [COMMAND_EXEC] ls | wc (Exit: 0)\n[2026-10-07 11:20:05] [HEARTBEAT] Monitor thread active (TID: 140234)\n`;
 
@@ -582,91 +583,232 @@ Loading access logs...
         appendTerminal(`<div class="text-slate-400">[AUTH] User ${interactiveSession.user} logged out. Terminating ShellForge session safely.</div>`);
         shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [LOGOUT] User: ${interactiveSession.user}\n`;
         appMode = 'BASH';
+        shellforgeCwd = '/workspaces/A7_OSSP_PROJ';
         updatePrompt(`srinath@shellforge:${repoDisplay.shellforge}$`, 'text-emerald-400');
         return;
       }
 
       if (cmd === 'clear') { clearTerminal(); return; }
 
-      // Security metacharacter blocking
-      if (cmd.includes(';') || cmd.includes('&&') || cmd.includes('||') || cmd.includes('sudo') || cmd.includes('rm -rf') || cmd.includes('`')) {
-        appendTerminal(`<div class="text-rose-400 font-mono text-xs">[SECURITY BLOCKED] Disallowed metacharacter or dangerous operator detected in command stream! Execution aborted.</div>`);
-        shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [SECURITY_VIOLATION] Blocked: "${cmd}"\n`;
+      // Security metacharacter blocking (; && || ` $\)
+      if (cmd.includes(';') || cmd.includes('&&') || cmd.includes('||') || cmd.includes('`') || cmd.includes('$') || cmd.includes('\\')) {
+        appendTerminal(`<div class="text-rose-400 font-mono text-xs">[SECURITY BLOCKED] Disallowed metacharacter (;&\`$\\) detected in command stream! Execution aborted.</div>`);
+        shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [SECURITY_VIOLATION] Blocked metacharacter attempt: "${cmd}"\n`;
         return;
       }
 
-      // Pipeline execution
+      // Check Whitelist vs Forbidden
+      const baseCmd = cmd.trim().split(/\s+/)[0];
+      const ALLOWED = ['ls', 'pwd', 'date', 'whoami', 'echo', 'cat', 'clear', 'uname', 'df', 'wc', 'grep', 'ps', 'sort', 'head', 'tail', 'cd', 'help', 'env', 'history', 'exit', 'audit'];
+      if (!ALLOWED.includes(baseCmd) && !cmd.includes('|') && !cmd.includes('>') && !cmd.includes('<')) {
+        appendTerminal(`<div class="text-rose-400 font-mono text-xs font-semibold">[SECURITY VIOLATION] Command "${escapeHtml(baseCmd)}" is RESTRICTED: Not in whitelist!</div>
+<div class="text-slate-400 font-mono text-xs">ShellForge Security: Only authorized system utilities and builtins are permitted.</div>
+<div class="text-amber-400/90 font-mono text-[11px] mt-0.5">Logged security violation to logs/access.log (Audit Alert triggered). Type "help" for allowed commands.</div>`);
+        shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [SECURITY_VIOLATION] User: ${interactiveSession.user || 'admin'} | Unauthorized command: "${cmd}" - ACCESS DENIED\n`;
+        return;
+      }
+
+      // Pipeline execution (e.g. ls | wc, cat access.log | grep ADMIN)
       if (cmd.includes('|')) {
         const parts = cmd.split('|').map(s => s.trim());
+        let pipeOutput = `       8       8      56`;
+        if (cmd.includes('grep')) {
+          pipeOutput = `[2026-10-08 07:30:10] [AUTH_SUCCESS] User: admin | Role: ADMIN\n[2026-10-08 07:31:05] [COMMAND_EXEC] whoami (Role: ADMIN)`;
+        } else if (cmd.includes('wc -l')) {
+          pipeOutput = `8`;
+        }
         appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono text-xs">[PIPE: ${parts.join(' ➔ ')}]
-       8       8      56
-Pipeline executed cleanly with zero race conditions.</pre>`);
+${escapeHtml(pipeOutput)}
+Pipeline executed cleanly using pipe() and dup2() with zero race conditions.</pre>`);
         shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [PIPE_EXEC] "${cmd}" (Exit: 0)\n`;
         return;
       }
 
-      // Redirection execution
+      // Redirection execution (e.g. echo "xyz" >> logs/access.log, echo "test" > note.txt)
       if (cmd.includes('>>') || cmd.includes('>') || cmd.includes('<')) {
-        appendTerminal(`<div class="text-emerald-400 font-mono text-xs">[REDIRECT] Successfully redirected I/O streams using dup2() file descriptor binding.</div>`);
+        appendTerminal(`<div class="text-emerald-400 font-mono text-xs">[REDIRECT] Successfully redirected standard I/O streams using dup2() file descriptor binding.</div>`);
         shellAuditLogs += `[${new Date().toISOString().replace('T', ' ').substring(0, 19)}] [REDIRECT_EXEC] "${cmd}"\n`;
         return;
       }
 
-      // Builtins & Whitelisted commands
-      if (cmd === 'pwd') {
-        appendTerminal(`<div class="text-slate-200 font-mono">/workspaces/A7_OSSP_PROJ</div>`);
+      // BUILTIN: cd
+      if (cmd === 'cd' || cmd === 'cd ~') {
+        shellforgeCwd = '/workspaces/A7_OSSP_PROJ';
         return;
       }
+      if (cmd.startsWith('cd ')) {
+        let target = cmd.substring(3).trim();
+        if (target === '..' || target === '../') {
+          if (shellforgeCwd !== '/workspaces/A7_OSSP_PROJ') {
+            const parts = shellforgeCwd.split('/');
+            parts.pop();
+            shellforgeCwd = parts.join('/') || '/workspaces/A7_OSSP_PROJ';
+          }
+        } else if (target === '.' || target === './') {
+          // current dir
+        } else {
+          target = target.replace(/^\.\//, '').replace(/\/$/, '');
+          const validSubdirs = ['bin', 'include', 'logs', 'practicals_and_skilling', 'src'];
+          const currentSub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+
+          if (currentSub === '' && validSubdirs.includes(target)) {
+            shellforgeCwd = `/workspaces/A7_OSSP_PROJ/${target}`;
+          } else if (validSubdirs.includes(target)) {
+            shellforgeCwd = `/workspaces/A7_OSSP_PROJ/${target}`;
+          } else if (target === '/workspaces/A7_OSSP_PROJ') {
+            shellforgeCwd = '/workspaces/A7_OSSP_PROJ';
+          } else {
+            appendTerminal(`<div class="text-rose-400 font-mono text-xs">shellforge: cd: ${escapeHtml(target)}: No such file or directory</div>`);
+          }
+        }
+        return;
+      }
+
+      // BUILTIN: pwd
+      if (cmd === 'pwd') {
+        appendTerminal(`<div class="text-slate-200 font-mono">${escapeHtml(shellforgeCwd)}</div>`);
+        return;
+      }
+
+      // BUILTIN: whoami
       if (cmd === 'whoami') {
         appendTerminal(`<div class="text-slate-200 font-mono">${interactiveSession.user} (Role: ${interactiveSession.user.toUpperCase()})</div>`);
         return;
       }
+
+      // BUILTIN: date
       if (cmd === 'date') {
         appendTerminal(`<div class="text-slate-200 font-mono">${new Date().toUTCString()}</div>`);
         return;
       }
+
+      // BUILTIN: uname
+      if (cmd === 'uname' || cmd.startsWith('uname ')) {
+        appendTerminal(`<div class="text-slate-200 font-mono">Linux ossp-engine 6.6.137-microsoft-standard-WSL2 x86_64 GNU/Linux</div>`);
+        return;
+      }
+
+      // BUILTIN: df
+      if (cmd === 'df' || cmd.startsWith('df ')) {
+        appendTerminal(`<pre class="text-slate-200 font-mono text-xs">Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdb       1007G  120G  836G  13% /workspaces/A7_OSSP_PROJ
+tmpfs           7.8G     0  7.8G   0% /dev/shm</pre>`);
+        return;
+      }
+
+      // BUILTIN: ps
+      if (cmd === 'ps' || cmd.startsWith('ps ')) {
+        appendTerminal(`<pre class="text-slate-200 font-mono text-xs">  PID TTY          TIME CMD
+ 1024 pts/0    00:00:00 bash
+ 1050 pts/0    00:00:01 shellforge
+ 1051 pts/0    00:00:00 monitor_telemetry</pre>`);
+        return;
+      }
+
+      // BUILTIN: audit
+      if (cmd === 'audit') {
+        appendTerminal(`<pre class="text-emerald-300 bg-slate-900/60 p-2.5 rounded font-mono text-xs whitespace-pre-wrap max-h-60 overflow-y-auto">${escapeHtml(shellAuditLogs)}</pre>`);
+        return;
+      }
+
+      // BUILTIN: help
       if (cmd === 'help') {
         appendTerminal(`<pre class="text-slate-300 bg-slate-900/60 p-2.5 rounded font-mono text-xs">ShellForge v2.5 Whitelist & Built-in Commands:
-  cd, pwd, env, history, clear, help, exit
+  cd, pwd, env, history, clear, help, exit, audit
 Whitelisted System Binaries:
-  ls, pwd, date, whoami, echo, cat, uname, df, wc
-Operators Supported:
+  ls, pwd, date, whoami, echo, cat, uname, df, wc, grep, ps, sort, head, tail
+Supported Operators:
   cmd1 | cmd2 (Anonymous Pipes)
   cmd > file, cmd >> file, cmd < file (dup2 Redirection)</pre>`);
         return;
       }
+
+      // BUILTIN: env
       if (cmd === 'env') {
         appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono text-xs">USER=${interactiveSession.user}
 ROLE=${interactiveSession.user.toUpperCase()}
 SHELL=shellforge
+PWD=${shellforgeCwd}
 PATH=/bin:/usr/bin
 LOGFILE=logs/access.log
 BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
         return;
       }
+
+      // BUILTIN: history
       if (cmd === 'history') {
         appendTerminal(`<pre class="text-slate-300 font-mono text-xs">1  pwd
-2  ls | wc
-3  echo "testing live input" >> logs/access.log
-4  help</pre>`);
+2  ls
+3  cd logs
+4  cat access.log
+5  cd ..
+6  ls | wc
+7  help</pre>`);
         return;
       }
+
+      // BUILTIN: echo
       if (cmd.startsWith('echo ')) {
         appendTerminal(`<div class="text-slate-200 font-mono">${escapeHtml(cmd.substring(5).replace(/['"]/g, ''))}</div>`);
         return;
       }
+
+      // COMMAND: ls
       if (cmd === 'ls' || cmd.startsWith('ls ')) {
-        appendTerminal(`<div class="text-slate-200 font-mono">Makefile  README.md  bin  include  logs  practicals_and_skilling  src</div>`);
+        const currentSub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        let entries = [];
+        if (currentSub === '') {
+          entries = ['Makefile', 'README.md', 'bin/', 'include/', 'logs/', 'practicals_and_skilling/', 'src/'];
+        } else if (currentSub === 'logs') {
+          entries = ['access.log'];
+        } else if (currentSub === 'include') {
+          entries = ['auth.h', 'builtin.h', 'executor.h', 'pipes.h', 'redirect.h', 'shell.h', 'signals.h', 'thread.h'];
+        } else if (currentSub === 'src') {
+          entries = ['auth.c', 'builtin.c', 'executor.c', 'main.c', 'pipes.c', 'redirect.c', 'signals.c', 'thread.c'];
+        } else if (currentSub === 'bin') {
+          entries = ['shellforge*'];
+        } else {
+          entries = ['practical8.c', 'practical9_copy.c', 'skilling10_threads.c'];
+        }
+
+        if (cmd.includes('-l')) {
+          let outputLines = `total ${entries.length * 4}\n`;
+          entries.forEach(e => {
+            const isDir = e.endsWith('/');
+            const name = e.replace('/', '').replace('*', '');
+            outputLines += `${isDir ? 'drwxr-xr-x' : '-rw-r--r--'} 1 ${interactiveSession.user || 'admin'} student  ${isDir ? 4096 : 1420} Oct 08 13:14 ${name}\n`;
+          });
+          appendTerminal(`<pre class="text-slate-200 font-mono text-xs">${outputLines.trim()}</pre>`);
+        } else {
+          appendTerminal(`<div class="text-slate-200 font-mono">${entries.map(e => e.endsWith('/') ? `<span class="text-sky-400 font-semibold">${e}</span>` : (e.endsWith('*') ? `<span class="text-emerald-400 font-semibold">${e}</span>` : e)).join('&nbsp;&nbsp;')}</div>`);
+        }
         return;
       }
+
+      // COMMAND: cat
       if (cmd.startsWith('cat ')) {
-        const file = cmd.substring(4).trim();
-        const content = VFS.shellforge[file] || VFS.shellforge['src/' + file] || (file.includes('access.log') ? shellAuditLogs : null);
+        let file = cmd.substring(4).trim();
+        const currentSub = shellforgeCwd.replace('/workspaces/A7_OSSP_PROJ', '').replace(/^\//, '');
+        let lookup = file;
+        if (currentSub && !file.includes('/')) {
+          lookup = `${currentSub}/${file}`;
+        }
+        if (lookup === 'logs/access.log' || file === 'access.log') {
+          appendTerminal(`<pre class="text-emerald-300 bg-slate-900/60 p-2.5 rounded font-mono text-xs whitespace-pre-wrap max-h-60 overflow-y-auto">${escapeHtml(shellAuditLogs)}</pre>`);
+          return;
+        }
+        const content = VFS.shellforge[lookup] || VFS.shellforge[file] || VFS.shellforge['src/' + file] || VFS.shellforge['include/' + file];
         if (content) {
-          appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono text-xs whitespace-pre-wrap">${escapeHtml(content)}</pre>`);
+          appendTerminal(`<pre class="text-slate-200 bg-slate-900/60 p-2.5 rounded font-mono text-xs whitespace-pre-wrap max-h-60 overflow-y-auto">${escapeHtml(content)}</pre>`);
         } else {
           appendTerminal(`<div class="text-rose-400 font-mono text-xs">cat: ${escapeHtml(file)}: No such file or directory</div>`);
         }
+        return;
+      }
+
+      // COMMAND: head / tail / wc
+      if (cmd.startsWith('head ') || cmd.startsWith('tail ') || cmd.startsWith('wc ') || cmd === 'wc') {
+        appendTerminal(`<pre class="text-slate-200 bg-slate-900/40 p-2 rounded font-mono text-xs">       25      84     780 ${escapeHtml(cmd.split(' ').slice(1).join(' ') || '')}</pre>`);
         return;
       }
 
@@ -676,6 +818,7 @@ BACKGROUND_MONITOR=active (TID: 0x7fa28c)</pre>`);
     // START INTERACTIVE PROCEDURES
     function startInteractiveShell() {
       switchRepo('shellforge');
+      shellforgeCwd = '/workspaces/A7_OSSP_PROJ';
       appendTerminal(`<pre class="text-emerald-400 font-mono text-xs my-1">gcc -Wall -Wextra -g -Iinclude src/main.c src/auth.c src/executor.c src/builtin.c src/signals.c src/pipes.c src/redirect.c src/thread.c -pthread -o bin/shellforge
 Build successful: bin/shellforge
 mkdir -p logs
