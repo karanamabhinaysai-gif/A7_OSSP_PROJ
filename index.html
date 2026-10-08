@@ -633,8 +633,12 @@ Loading access logs...
 
       // 2. STATE: SHELLFORGE USERNAME
       if (appMode === 'SHELLFORGE_USER') {
-        appendTerminal(`<div><span class="text-amber-400 font-bold">[AUTH] Enter username:</span> <span class="text-white font-semibold">${escapeHtml(val || 'admin')}</span></div>`);
-        interactiveSession.user = val || 'admin';
+        let u = val.trim();
+        if (!u || u === './bin/shellforge' || u === 'make run' || u === 'bin/shellforge') {
+          u = 'admin';
+        }
+        appendTerminal(`<div><span class="text-amber-400 font-bold">[AUTH] Enter username:</span> <span class="text-white font-semibold">${escapeHtml(u)}</span></div>`);
+        interactiveSession.user = u;
         appMode = 'SHELLFORGE_PASS';
         updatePrompt('[AUTH] Enter password: ', 'text-amber-400');
         input.type = 'password';
